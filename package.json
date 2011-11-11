@@ -1,9 +1,0 @@
-{
-    "name": "fireedit", 
-    "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
-    "author": "apurba.n@imaginea.com", 
-    "version": "0.1", 
-    "fullName": "fireedit", 
-    "id": "fireedit@imaginea.com", 
-    "description": "addon for providing js editing functionality"
-}
