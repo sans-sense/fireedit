@@ -1,2 +1,2 @@
-The main module is a program that creates a widget.  When a user clicks on
-the widget, the program loads the mozilla.org website in a new tab.
+The main module opens the editor from the data folder.
+The editor can be used to open up files from the local drives.

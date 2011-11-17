@@ -1,9 +1,7 @@
 (function() {
     var openFileElement = document.getElementById('openFile');
     openFileElement.onclick = function(event) {
-        var path = window.prompt("Enter js file name","/data/host/projects/personalProjects/fun/jseditor/scratch.js");
-        document.getElementById('ff-int-path').value = path;
-        self.port.emit("openFile", path);
+        self.port.emit("openFile", "");
         return false;
     };
 

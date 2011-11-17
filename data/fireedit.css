@@ -14,7 +14,6 @@
    div.menu {
        width:20%;
        background-color: black;
-       color: black;
        display: inline-block;
        height: 700px;
     }
@@ -56,7 +55,6 @@
 }
 
 #dock {
-    height: 100%;
     top: 0;
-    background-color:black;
+    padding-bottom: 50px;
 }

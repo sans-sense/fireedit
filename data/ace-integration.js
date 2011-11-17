@@ -4,7 +4,7 @@ window.onload = function() {
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/twilight");
     
-    var JavaScriptMode = require("ace/mode/javascript").Mode;
+    var JavaScriptMode = require("ace/mode/enh-javascript").Mode;
     editor.getSession().setMode(new JavaScriptMode());
 };
 
