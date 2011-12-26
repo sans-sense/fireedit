@@ -13,15 +13,32 @@ define("fireedit/view/outline_view",
                viewUI = viewElement;
                // set it up to listen to the mode
                this.jsMode.on("AST", this.handleAST);
+               viewUI.addEventListener("click", this.handleNavigation, false);
            };
            
            (function() {
                oop.inherits(this, View);
                var self = this;
 
+               var getTextValue = function(htmlElement) {
+                   var i = 0;
+                   var children = htmlElement.childNodes;
+
+                   // Iterate through the child nodes of the element
+                   for( ; i < children.length; i++ ) {
+                       // Look for text nodes
+                       if( children.item(i).nodeType === children.item(i).TEXT_NODE ) { 
+                           return children.item(i).nodeValue;
+                       }
+                   }
+                   return null;
+               };
+
                this.handleAST = function(parsedAST) {
                    var tmpNode;
                    var childCounter = 0;
+
+                   //uses this to identify methods present in last view and not in this one
                    var tmpMap = [];
                    for( ; childCounter < parsedAST.children.length; childCounter++){
                        tmpNode = parsedAST.children[childCounter];
@@ -59,7 +76,17 @@ define("fireedit/view/outline_view",
                        self.dirty = false;
                    }
                };
-
+               this.handleNavigation = function(clickEvent) {
+                   var functionName = getTextValue(clickEvent.target);
+                   var actualFunction;
+                   
+                   if (functionName) {
+                       actualFunction = viewDictionary[functionName];
+                       if (actualFunction) {
+                           actualFunction.navigateTo();
+                       }
+                   }
+               };
 
            }).call(OutlineView.prototype);
            exports.View = OutlineView;
@@ -78,7 +105,8 @@ define("fireedit/internal/function",
 
            (function() {
                this.navigateTo = function() {
-                   editor.gotoLine(this.lineNo);
+                   editor.gotoLine(this.lineNo + 1);
+                   editor.focus();
                };
                this.updateLine = function(lineNo) {
                    if (!(this.lineNo === lineNo)) {
