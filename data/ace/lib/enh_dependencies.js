@@ -10,6 +10,8 @@
  * done by SpiderMonkey.
  */
 
+var parsedFunctions = [];
+
 define(
     'ace/narcissus/jsdefs', ['require', 'exports', 'module'],
 function(require, exports, module) {
@@ -1489,10 +1491,17 @@ function(require, exports, module) {
 
     function tokenString(tt) {
         var t = definitions.tokens[tt];
-        return /^\W/.test(t) ? definitions.opTypeNames[t] : t.toUpperCase();
+        if (t) {
+            return /^\W/.test(t) ? definitions.opTypeNames[t] : t.toUpperCase();
+        } else {
+            return "UNKNOWN";
+        }
+        // AN 27-12-11 token unknown so t undefined
+        //return /^\W/.test(t) ? definitions.opTypeNames[t] : t.toUpperCase();
     }
 
     Np.toString = function () {
+        var thingsToPrint = ["type", "children", "body", "value", "name", "expression", "initializer"]
         var a = [];
         for (var i in this) {
             if (this.hasOwnProperty(i) && i !== 'type' && i !== 'target')
@@ -1501,9 +1510,12 @@ function(require, exports, module) {
         a.sort(function (a,b) { return (a.id < b.id) ? -1 : 1; });
         const INDENTATION = "    ";
         var n = ++Node.indentLevel;
-        var s = "{\n" + INDENTATION.repeat(n) + "type: " + tokenString(this.type);
-        for (i = 0; i < a.length; i++)
-            s += ",\n" + INDENTATION.repeat(n) + a[i].id + ": " + a[i].value;
+        var s = "Node {\n" + INDENTATION.repeat(n) + "type: " + tokenString(this.type);
+        for (i = 0; i < a.length; i++) {
+            if (thingsToPrint.indexOf(a[i].id) > -1) {
+                s += ",\n" + INDENTATION.repeat(n) + a[i].id + ": " + a[i].value;
+            }
+        }
         n = --Node.indentLevel;
         s += "\n" + INDENTATION.repeat(n) + "}";
         return s;
@@ -2258,6 +2270,8 @@ function(require, exports, module) {
         else if (requireName)
             throw t.newSyntaxError("missing function identifier");
 
+        f.parentBlock = x.parentBlock;
+
         var inModule = x ? x.inModule : false;
         var x2 = new StaticContext(null, null, inModule, true);
 
@@ -2304,6 +2318,10 @@ function(require, exports, module) {
         f.functionForm = functionForm;
         if (functionForm === DECLARED_FORM)
             x.parentScript.funDecls.push(f);
+
+        // AN 29-12-11
+        parsedFunctions.push(f);
+
         return f;
     }
 
@@ -3025,6 +3043,7 @@ function(require, exports, module) {
      * parse :: (source, filename, line number) -> node
      */
     function parse(s, f, l) {
+        parsedFunctions = [];
         var t = new lexer.Tokenizer(s, f, l);
         var n = Script(t, false, false);
         if (!t.done)

@@ -58,3 +58,13 @@
     top: 0;
     padding-bottom: 50px;
 }
+
+#outline-view ul li {
+    cursor: pointer;
+    color: #CDA869;
+}
+
+.view {
+    border: 1px solid grey;
+}
+
