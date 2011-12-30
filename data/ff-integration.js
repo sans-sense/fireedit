@@ -12,8 +12,9 @@
     }
 
 
-    self.port.on("fileContents", function(text) {
-        document.getElementById('ff-int-field').value = text;
+    self.port.on("fileContents", function(fileMessage) {
+        document.getElementById('ff-int-path').value = fileMessage.path;
+        document.getElementById('ff-int-field').value = fileMessage.contents;
         document.defaultView.postMessage("readNew", "*");
     });
 
