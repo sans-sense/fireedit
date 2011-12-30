@@ -23,6 +23,21 @@ define("fireedit/view/outline_view",
                oop.inherits(this, View);
                var self = this;
                var functionNamer = new FunctionNamer();
+               
+               /**
+                 * Sorts the array on basis of lineno property
+                 */
+               var getSortedParseFunctions = function(functionArray) {
+                   return functionArray.sort(function(first, second){
+                       if (first.lineno > second.lineno) {
+                           return 1;
+                       } else if (first.lineno < second.lineno) {
+                           return -1;
+                       } else {
+                           return 0;
+                       }
+                   });
+               };
 
                var getTextValue = function(htmlElement) {
                    var i = 0;
@@ -38,64 +53,65 @@ define("fireedit/view/outline_view",
                    return null;
                };
 
+               /**
+                 * Callback method for handling the AST, callback so watch out for this.
+                 * delegates to the proper method for actual name determination
+                 */
                this.handleAST = function(parsedAST) {
-                   parsedResults = parsedAST;
 
                    var tmpNode;
                    var childCounter = 0;
 
                    //uses this to identify methods present in last view and not in this one
                    var tmpMap = [];
+                   var parsedFunction = 0;
+                   var sortedParsedFunctions = getSortedParseFunctions(parsedFunctions);
 
                    // parsed functions is a global exposed from narcissus
-                   for (parsedFunction in parsedFunctions) {
-                       tmpNode = parsedFunctions[parsedFunction];
+                   for (parsedFunction in sortedParsedFunctions) {
+                       tmpNode = sortedParsedFunctions[parsedFunction];
                        var functionName = functionNamer.guessName(tmpNode);
-                       if (viewDictionary[functionName]) {
-                           viewDictionary[functionName].updateLine(tmpNode.lineno);
-                       } else {
-                           viewDictionary[functionName] = new ASTFunction(functionName, tmpNode.lineno);
+                       var functionKey = functionName+"@"+tmpNode.lineno;
+                       if (!(viewDictionary[functionKey])) {
+                           viewDictionary[functionKey] = new ASTFunction(functionName, tmpNode.lineno, tmpNode.end);
                            self.dirty = true;
                        }
-                       tmpMap[functionName] = 1;
+                       tmpMap[functionKey] = 1;
                    }
 
                    for each (fun in viewDictionary) {
-                       if (!(tmpMap[fun.name])) {
-                           delete viewDictionary[fun.name];
+                       if (!(tmpMap[fun.internalName])) {
+                           delete viewDictionary[fun.internalName];
                            self.dirty = true;
                        }
                    }
-
-                   self.repaintView();
+                   
+                   // exporting to global variable for ease of debugging
+                   if (self.dirty) {
+                       parsedResults = parsedAST;
+                       self.repaintView();
+                       self.dirty = false;
+                   };
                };
 
                this.repaintView = function() {
-                   if (self.dirty) {
                        // TODO we need to reflect the model changes to UI
                        var listHtml = "<ul>";
-                       var liHtml = "<li>[0]</li>"
+                       var liHtml = "<li class='[0]'>[1]</li>"
                        var fun;
                        for each (fun in viewDictionary) {
-                           listHtml += liHtml.format(fun.name);
+                           listHtml += liHtml.format(fun.lineNo, fun.name);
                        }
                        listHtml +="</ul>";
                        viewUI.innerHTML = listHtml;
-                       self.dirty = false;
-                   }
                };
                this.handleNavigation = function(clickEvent) {
-                   var functionName = getTextValue(clickEvent.target);
-                   var actualFunction;
-                   
-                   if (functionName) {
-                       actualFunction = viewDictionary[functionName];
-                       if (actualFunction) {
-                           actualFunction.navigateTo();
-                       }
+                   var lineNo = clickEvent.target.getAttribute("class");
+                   if (lineNo) {
+                       editor.gotoLine(parseInt(lineNo) + 1);
+                       editor.focus();
                    }
                };
-
            }).call(OutlineView.prototype);
            exports.View = OutlineView;
        });
@@ -106,16 +122,15 @@ define("fireedit/view/outline_view",
 define("fireedit/internal/function",
        ["require", "exports", "module"],
        function(require, exports, module) {
-           var ASTFunction = function(name, lineNo) {
+           var ASTFunction = function(name, lineNo, endToken) {
                this.name = name;
                this.lineNo = lineNo;
+               this.internalName = name+"@"+lineNo;
+               this.endTokenPosition = endToken;
            };
 
            (function() {
-               this.navigateTo = function() {
-                   editor.gotoLine(this.lineNo + 1);
-                   editor.focus();
-               };
+               var _parentFunction;
 
                this.updateLine = function(lineNo) {
                    if (!(this.lineNo === lineNo)) {
@@ -127,12 +142,28 @@ define("fireedit/internal/function",
                    return "ASTF : [0] at line [1]".format(this.name, this.lineNo);
                };
 
+               this.setParent = function(parentFunction) {
+                   _parentFunction = parentFunction;
+               };
+               
+               this.getParent = function() {
+                   return _parentFunction;
+               };
+               
+               this.contains = function(anotherFunction) {
+                   return ((anotherFunction.endTokenPosition < this.endTokenPosition) 
+                           && (anotherFunction.lineNo > this.lineNo));
+               };
            } ).call(ASTFunction.prototype);
 
            exports.ASTElement = ASTFunction;
        });
 
 
+/**
+ * Helps in determining function names. SInce most functions are actually anonymous, we need to take the initialization and 
+ * expression into account to derive the name properly
+ */
 define("fireedit/internal/function_namer",
        ["require", "exports", "module", "ace/narcissus/jsdefs"],
        function(require, exports, module) {
@@ -144,6 +175,7 @@ define("fireedit/internal/function_namer",
            
            (function() {
 
+               // gets the name from the actual expression body, handles "this.parse = function() {}"
                var getNameFromExpression = function (node) {
                    var firstChild = node.children[0];
                    if (firstChild) {
@@ -157,6 +189,7 @@ define("fireedit/internal/function_namer",
                    }
                };
 
+               // gets the name from the actual initialization part  handles "var parse = function() {}"
                var getNameFromIdentifier = function(node) {
                    var firstChild = node.children[0];
                    if (firstChild) {
@@ -167,15 +200,20 @@ define("fireedit/internal/function_namer",
                    
                };
 
+               /**
+                 * Main entry point, takes a node and guesses the name for the block
+                 */
                this.guessName = function(node) {
                    var declaringScript = null;
                    var currentStmt;
                    var stmtIndex = 0;
                    var guessedName;
 
+                   // for non-anonymous function form i.e. DECLARED_FORM the name is in the node
                    if (node.functionForm === 0) {
                        guessedName = node.name;
                    } else {
+                       // for anonymous functions i.e STATEMENT_FORM and EXPRESSED_FORM we need to determine the name
                        declaringScript = node.parentBlock;
                        for (stmtIndex in declaringScript.children) {
                            currentStmt = declaringScript.children[stmtIndex];
