@@ -1413,6 +1413,9 @@ function(require, exports, module) {
         this.tokenizer = t;
         this.children = [];
 
+        // AN introducing parent for back tracking
+        this.parent = null;
+
         for (var prop in init)
             this[prop] = init[prop];
     }
@@ -1483,6 +1486,9 @@ function(require, exports, module) {
                 this.start = kid.start;
             if (this.end < kid.end)
                 this.end = kid.end;
+
+            // AN 30-12-11 we need to backtrack so all children should be able to get to their parent
+            kid.parentNode = this;
         }
         return this.children.push(kid);
     }

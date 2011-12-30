@@ -174,18 +174,41 @@ define("fireedit/internal/function_namer",
            };
            
            (function() {
+               var getReadableValueFromDotNode = function(node) {
+                   var readableValue = "", nodeChildren, currentChild, i = 0;
 
+                   nodeChildren = node.children;
+                   //iterate through the children
+                   for (i = 0; i < nodeChildren.length; i++) {
+                       currentChild = nodeChildren[i];
+                       // if it is a dot node
+                       if (currentChild.type === 35) {
+                           readableValue += getReadableValueFromDotNode(currentChild);
+                       } else {
+                           readableValue += currentChild.value;
+                           readableValue += ".";
+                       }
+                   }
+                   return readableValue;
+               }
                // gets the name from the actual expression body, handles "this.parse = function() {}"
                var getNameFromExpression = function (node) {
                    var firstChild = node.children[0];
+                   var firstValue = null, nodeChildren, counter = 0;
                    if (firstChild) {
                        if (firstChild.children.length > 1) {
-                           return firstChild.children[0].value +"." +  firstChild.children[1].value;
+                           // in case first value is not defined the child is in turn a parent of more elements
+                           if (firstChild.children[0].type === 35) {
+                               firstValue = getReadableValueFromDotNode(firstChild.children[0]);
+                           } else {
+                               firstValue = firstChild.children[0].value + ".";
+                           }
+                           return firstValue +  firstChild.children[1].value;
                        } else {
                            return null;
                        }
                    } else {
-                       return "Failure";
+                       return null;
                    }
                };
 
@@ -195,9 +218,20 @@ define("fireedit/internal/function_namer",
                    if (firstChild) {
                        return firstChild.value;
                    } else {
-                       return "Failure";
+                       return null;
                    }
                    
+               };
+
+               // gets the name using the parent
+               var getNameUsingParent = function(node) {
+                   var parentNode = node.parentNode;
+                   var guessedName = null;
+                   // if parent node is ":" we will just use the first child
+                   if (parentNode && parentNode.type === 51) {
+                       guessedName =  parentNode.children[0].value;
+                   }
+                   return guessedName;
                };
 
                /**
@@ -208,27 +242,38 @@ define("fireedit/internal/function_namer",
                    var currentStmt;
                    var stmtIndex = 0;
                    var guessedName;
+                   const GETTER_TYPE = 52;
+                   const SETTER_TYPE = 53;
+
 
                    // for non-anonymous function form i.e. DECLARED_FORM the name is in the node
                    if (node.functionForm === 0) {
                        guessedName = node.name;
                    } else {
-                       // for anonymous functions i.e STATEMENT_FORM and EXPRESSED_FORM we need to determine the name
-                       declaringScript = node.parentBlock;
-                       for (stmtIndex in declaringScript.children) {
-                           currentStmt = declaringScript.children[stmtIndex];
-                           if (currentStmt.lineno === node.lineno) {
-                               if (currentStmt.expression) {
-                                   guessedName = getNameFromExpression(currentStmt.expression);
-                                   break;
-                               } else {
-                                   guessedName = getNameFromIdentifier(currentStmt);;
+                       if (node.type === GETTER_TYPE || node.type === SETTER_TYPE) {
+                           return node.name + "$getter";
+                       } else {
+                           // for anonymous functions i.e STATEMENT_FORM and EXPRESSED_FORM we need to determine the name
+                           declaringScript = node.parentBlock;
+                           for (stmtIndex in declaringScript.children) {
+                               currentStmt = declaringScript.children[stmtIndex];
+                               if (currentStmt.lineno === node.lineno) {
+                                   if (currentStmt.expression) {
+                                       guessedName = getNameFromExpression(currentStmt.expression);
+                                       break;
+                                   } else {
+                                       guessedName = getNameFromIdentifier(currentStmt);;
+                                       break;
+                                   }
                                }
                            }
                        }
                    }
                    if (!(guessedName)) {
-                       guessedName = "Anony@"+node.lineno;
+                       guessedName = getNameUsingParent(node);
+                       if (!(guessedName)) {
+                           guessedName = "Anony@"+node.lineno;
+                       }
                    }
                    return guessedName;
                }

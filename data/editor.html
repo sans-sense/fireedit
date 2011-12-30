@@ -7,9 +7,6 @@
     <link rel="stylesheet" type="text/css" media="screen" href="fireedit.css" /> 
   </head>
   <body>
-    <div id="header">
-      Logo and other details
-    </div>
     <div id="maincontent">
 
       <div id="menu" class="menu">
@@ -20,23 +17,23 @@
             <li><a href="#" id="saveFile"> Save</a></li>
           </ul>
         </div>
-        <div id="outline-view" class="view">
-          Placeholder for outline view
+        <div id="outline-view-container" class="view">
+          <hr/>
+          <div class="view-label">Method Outline</div>
+          <hr/>
+          <div id="outline-view" ></div>
+          <hr/>
         </div>
       </div>
 
       <div id="editor" class="editor">
-function foo(items) {
-        var i;
-        for (i = 0; i &lt; items.length; i++) {
-              alert("Ace Rocks " + items[i]);
-        }
-}
-
-function bar() {
-    var parse = function() {
+Tokenizer.prototype = {
+    get position() {
         
-    };
+    },
+   match: function (tt) {
+       return this.get() == tt || this.unget();
+   }
 }
 </div>
     </div>

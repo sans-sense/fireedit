@@ -65,6 +65,11 @@
 }
 
 .view {
-    border: 1px solid grey;
+    max-height:80%;
+    overflow: auto;
 }
 
+.view-label {
+    color: white;
+    padding: 0 0 0 10px;
+}
