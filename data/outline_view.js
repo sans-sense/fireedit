@@ -95,7 +95,6 @@ define("fireedit/view/outline_view",
                };
 
                this.repaintView = function() {
-                       // TODO we need to reflect the model changes to UI
                        var listHtml = "<ul>";
                        var liHtml = "<li class='[0]'>[1]</li>"
                        var fun;
