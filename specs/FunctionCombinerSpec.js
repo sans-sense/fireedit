@@ -1,4 +1,16 @@
 describe("Function Combiner should create a graph with proper nesting", function() {
+    var createASTFunctions = function(arrayOfArrays) {
+        var infoArray, astFunctions = [], i = 0; 
+        for (i = 0; i < arrayOfArrays.length; i++) {
+            astFunctions.push(new ASTFunction(i + '', arrayOfArrays[i][0], arrayOfArrays[i][1]));
+        }
+        return astFunctions;
+    };
+
+    var createDecoratedNode = function(lineNo, end) {
+        return new DecoratedNode(createASTFunctions([[lineNo, end]])[0]);
+    };
+
     it("decorate nodes with information from functions", function() {
         var functionName = "test", lineNo = 2, end = 50;
         var testASTFunction = new ASTFunction(functionName, lineNo, end);
@@ -97,15 +109,22 @@ describe("Function Combiner should create a graph with proper nesting", function
         expect(reorganizedFunctions[0]._lineNo).toEqual(1);
     });
 
-    var createASTFunctions = function(arrayOfArrays) {
-        var infoArray, astFunctions = [], i = 0; 
-        for (i = 0; i < arrayOfArrays.length; i++) {
-            astFunctions.push(new ASTFunction(i + '', arrayOfArrays[i][0], arrayOfArrays[i][1]));
-        }
-        return astFunctions;
-    };
+    it("Reorganizes passed functions with proper parenting with multiple siblings", function() {
+        var astFunctions = createASTFunctions([[2,26], [6,87], [9,167]]), functionCombiner, reorganizedFunctions;
+        functionCombiner = new FunctionCombiner();
+        reorganizedFunctions = functionCombiner.reorganize(astFunctions);
+        expect(reorganizedFunctions[0]._lineNo).toEqual(2);
+        expect(reorganizedFunctions.length).toEqual(3);
+    });
 
-    var createDecoratedNode = function(lineNo, end) {
-        return new DecoratedNode(createASTFunctions([[lineNo, end]])[0]);
-    };
+    it("Reorganizes passed functions with proper parenting with nestings", function() {
+        var astFunctions = createASTFunctions([[4,1024], [7,470], [10,924], [12, 910]]), functionCombiner, reorganizedFunctions;
+        functionCombiner = new FunctionCombiner();
+        reorganizedFunctions = functionCombiner.reorganize(astFunctions);
+        expect(reorganizedFunctions[0]._lineNo).toEqual(4);
+        expect(reorganizedFunctions.length).toEqual(1);
+        expect(reorganizedFunctions[0].getChildren().length).toEqual(2);
+
+    });
+
 });
