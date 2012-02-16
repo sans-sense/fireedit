@@ -4,19 +4,36 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Fire Editor</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" media="screen" href="fireedit.css" /> 
   </head>
   <body>
-    <div id="maincontent">
+    <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <ul class="nav">
+                </ul>
+                <div class="btn-toolbar span4">
+                        <a class="btn" id="newFile">
+                            New
+                        </a>
+                        <a class="btn" id="openFile">
+                            Open
+                        </a>
+                        <a class="btn" id="saveFile">
+                            Save
+                        </a>
+              </div>
+                <a class="brand" href="#">
+                    FireEdit
+                </a>
+            </div>
+        </div>
+
+    </div>
 
       <div id="menu" class="menu">
         <!-- rewrite using jquery ui -->
-        <div id="dock">
-          <ul>
-            <li><a href="#" id="openFile"> Open</a></li>
-            <li><a href="#" id="saveFile"> Save</a></li>
-          </ul>
-        </div>
         <div id="outline-view-container" class="view">
           <hr/>
           <div class="view-label">Method Outline</div>
