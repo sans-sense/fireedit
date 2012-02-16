@@ -1,8 +1,8 @@
 // AN 26-12-11 outline view to show method outline, depends on AST from the mode
-var parsedResults;
+var parsedResults, sortedFunctions;
 
 define("fireedit/view/outline_view", 
-       ["require", "exports", "module", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer"],
+       ["require", "exports", "module", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer", "fireedit/graph/function_combiner", "fireedit/graph/decorated_node"],
        function(require, exports, module) {
            var View = require("fireedit/view/view").View;
            var viewDictionary = {};
@@ -10,6 +10,7 @@ define("fireedit/view/outline_view",
            var ASTFunction = require("fireedit/internal/function").ASTElement;
            var FunctionNamer = require("fireedit/internal/function_namer").Namer;
            var viewUI;
+           var FunctionCombiner = require("fireedit/graph/function_combiner").FunctionCombiner;
 
            var OutlineView = function(jsMode, viewElement) {
                this.jsMode = jsMode;
@@ -23,7 +24,8 @@ define("fireedit/view/outline_view",
                oop.inherits(this, View);
                var self = this;
                var functionNamer = new FunctionNamer();
-               
+               var functionCombiner = new FunctionCombiner();
+
                /**
                  * Sorts the array on basis of lineno property
                  */
@@ -65,9 +67,10 @@ define("fireedit/view/outline_view",
                    //uses this to identify methods present in last view and not in this one
                    var tmpMap = [];
                    var parsedFunction = 0;
-                   var sortedParsedFunctions = getSortedParseFunctions(parsedFunctions);
-
                    // parsed functions is a global exposed from narcissus
+                   var sortedParsedFunctions = getSortedParseFunctions(parsedFunctions);
+                   var functionASTs = [], i, listHtml = "";
+
                    for (parsedFunction in sortedParsedFunctions) {
                        tmpNode = sortedParsedFunctions[parsedFunction];
                        var functionName = functionNamer.guessName(tmpNode);
@@ -79,30 +82,31 @@ define("fireedit/view/outline_view",
                        tmpMap[functionKey] = 1;
                    }
 
+                   
                    for each (fun in viewDictionary) {
                        if (!(tmpMap[fun.internalName])) {
                            delete viewDictionary[fun.internalName];
                            self.dirty = true;
+                       } else {
+                           functionASTs.push(fun);
                        }
                    }
                    
                    // exporting to global variable for ease of debugging
                    if (self.dirty) {
                        parsedResults = parsedAST;
-                       self.repaintView();
+                       sortedFunctions = functionCombiner.reorganize(functionASTs)
+                       listHtml = "<ul>";
+                       for ( i = 0; i < sortedFunctions.length; i++) {
+                           listHtml += nodeToHtml(sortedFunctions[i]);
+                       }
+                       listHtml += "</ul>";
+                       self.repaintView(listHtml);
                        self.dirty = false;
                    };
                };
 
-               this.repaintView = function() {
-                       // TODO we need to reflect the model changes to UI
-                       var listHtml = "<ul>";
-                       var liHtml = "<li class='[0]'>[1]</li>"
-                       var fun;
-                       for each (fun in viewDictionary) {
-                           listHtml += liHtml.format(fun.lineNo, fun.name);
-                       }
-                       listHtml +="</ul>";
+               this.repaintView = function(listHtml) {
                        viewUI.innerHTML = listHtml;
                };
                this.handleNavigation = function(clickEvent) {
@@ -111,6 +115,21 @@ define("fireedit/view/outline_view",
                        editor.gotoLine(parseInt(lineNo) + 1);
                        editor.focus();
                    }
+               };
+               var nodeToHtml = function(decoratedNode) {
+                   var liHtml = "<li class='[0]'>[1]</li>", i, generatedContent, fun = decoratedNode.originalFunction;
+                   
+                   generatedContent = liHtml.format(fun.lineNo, fun.name);
+
+                   var nodeChildren = decoratedNode.getChildren();
+                   if (nodeChildren.length > 0) {
+                       generatedContent +=  "<ul>";
+                       for (i = 0; i < nodeChildren.length; i++) {
+                           generatedContent += nodeToHtml(nodeChildren[i]);
+                       }
+                       generatedContent += "</ul>";
+                   }
+                   return generatedContent;       
                };
            }).call(OutlineView.prototype);
            exports.View = OutlineView;

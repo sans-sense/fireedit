@@ -1,0 +1,38 @@
+<html>
+<head>
+
+<title>Jasmine Test Runner</title>
+
+<!-- Jasmine includes -->
+<link rel="stylesheet" type="text/css" href="lib/jasmine-1.1.0/jasmine.css">
+<script type="text/javascript" src="lib/jasmine-1.1.0/jasmine.js"></script>
+<script type="text/javascript" src="lib/jasmine-1.1.0/jasmine-html.js"></script>
+
+<!-- Common Dependencies, TODO refactor so that only require is needed -->
+<script type="text/javascript" src="../data/ace_integration.js"></script>
+<script type="text/javascript" src="../data/ace.js"></script>
+<script type="text/javascript" src="../data/outline_view.js"></script>
+
+<!-- Source files -->
+<script type="text/javascript" src="../data/function_combiner.js"></script>
+
+<!-- Spec files -->
+<script type="text/javascript" src="./FunctionCombinerSpec.js"></script>
+
+</head>
+<body>
+
+<script type="text/javascript">
+require(["fireedit/internal/function", "fireedit/graph/decorated_node", "fireedit/graph/function_combiner"], function(internalFunctionExport, decoratedNodeExport, functionCombinerExport) {
+window.ASTFunction = internalFunctionExport.ASTElement;
+window.DecoratedNode = decoratedNodeExport.DecoratedNode;
+window.FunctionCombiner = functionCombinerExport.FunctionCombiner;
+
+jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
+jasmine.getEnv().execute();
+
+});
+</script>
+
+</body>
+</html>
