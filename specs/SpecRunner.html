@@ -12,22 +12,24 @@
 <script type="text/javascript" src="../data/ace_integration.js"></script>
 <script type="text/javascript" src="../data/ace.js"></script>
 <script type="text/javascript" src="../data/outline_view.js"></script>
+<script type="text/javascript" src="../data/ace/lib/enh_dependencies.js"></script>
 
 <!-- Source files -->
 <script type="text/javascript" src="../data/function_combiner.js"></script>
 
 <!-- Spec files -->
 <script type="text/javascript" src="./FunctionCombinerSpec.js"></script>
+<script type="text/javascript" src="./NarcissusParsingSpec.js"></script>
 
 </head>
 <body>
 
 <script type="text/javascript">
-require(["fireedit/internal/function", "fireedit/graph/decorated_node", "fireedit/graph/function_combiner"], function(internalFunctionExport, decoratedNodeExport, functionCombinerExport) {
+require(["fireedit/internal/function", "fireedit/graph/decorated_node", "fireedit/graph/function_combiner", "ace/narcissus/jsparse"], function(internalFunctionExport, decoratedNodeExport, functionCombinerExport, parser) {
 window.ASTFunction = internalFunctionExport.ASTElement;
 window.DecoratedNode = decoratedNodeExport.DecoratedNode;
 window.FunctionCombiner = functionCombinerExport.FunctionCombiner;
-
+window.parser = parser;
 jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
 jasmine.getEnv().execute();
 
