@@ -20,13 +20,10 @@ define("fireedit/lib/enh_worker_javascript",
                    var value = this.doc.getValue();
                    value = value.replace(/^#!.*\n/, "\n");
                    
-                   //        var start = new Date();
                    var parser = require("ace/narcissus/jsparse");
                    try {
                        parser.parse(value);
                    } catch(e) {
-                       //            console.log("narcissus")
-                       //            console.log(e);
                        var chunks = e.message.split(":")
                        var message = chunks.pop().trim();
                        var lineNumber = parseInt(chunks.pop().trim()) - 1;
@@ -37,15 +34,9 @@ define("fireedit/lib/enh_worker_javascript",
                            type: "error"
                        });
                        return;
-                   } finally {
-                       //            console.log("parse time: " + (new Date() - start));
                    }
-                   
-                   //        var start = new Date();
-                   //        console.log("jslint")
                    lint(value, {undef: false, onevar: false, passfail: false});
                    this.sender.emit("jslint", lint.errors);        
-                   //        console.log("lint time: " + (new Date() - start));
                }
                
            }).call(EnhancedJavaScriptWorker.prototype);
