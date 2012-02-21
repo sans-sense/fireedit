@@ -2,7 +2,7 @@
 var parsedResults, sortedFunctions;
 
 define("fireedit/view/outline_view", 
-       ["require", "exports", "module", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer", "fireedit/graph/function_combiner", "fireedit/graph/decorated_node"],
+       ["require", "exports", "module", "jquery", "jquery.citrus", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer", "fireedit/graph/function_combiner", "fireedit/graph/decorated_node"],
        function(require, exports, module) {
            var View = require("fireedit/view/view").View;
            var viewDictionary = {};
@@ -96,12 +96,13 @@ define("fireedit/view/outline_view",
                    if (self.dirty) {
                        parsedResults = parsedAST;
                        sortedFunctions = functionCombiner.reorganize(functionASTs)
-                       listHtml = "<ul>";
+                       listHtml = '<ul class="citrus">';
                        for ( i = 0; i < sortedFunctions.length; i++) {
                            listHtml += nodeToHtml(sortedFunctions[i]);
                        }
                        listHtml += "</ul>";
                        self.repaintView(listHtml);
+                       $('.citrus').citrus();
                        self.dirty = false;
                    };
                };
@@ -117,19 +118,24 @@ define("fireedit/view/outline_view",
                    }
                };
                var nodeToHtml = function(decoratedNode) {
-                   var liHtml = "<li class='[0]'>[1]</li>", i, generatedContent, fun = decoratedNode.originalFunction;
-                   
-                   generatedContent = liHtml.format(fun.lineNo, fun.name);
-
+                   var liHtml, i, generatedContent, fun = decoratedNode.originalFunction;
                    var nodeChildren = decoratedNode.getChildren();
+                   liHtml = "<li class='[0]'>[1][2]</li>";
+
                    if (nodeChildren.length > 0) {
-                       generatedContent +=  "<ul>";
+                       var childUL =  "<ul>";
                        for (i = 0; i < nodeChildren.length; i++) {
-                           generatedContent += nodeToHtml(nodeChildren[i]);
+                           childUL += nodeToHtml(nodeChildren[i]);
                        }
-                       generatedContent += "</ul>";
+                       childUL += "</ul>";
+                       generatedContent = liHtml.format(fun.lineNo, fun.name, childUL);
+                   }else{
+
+                       generatedContent = liHtml.format(fun.lineNo, fun.name);
+
                    }
-                   return generatedContent;       
+
+                   return generatedContent;
                };
            }).call(OutlineView.prototype);
            exports.View = OutlineView;
@@ -164,13 +170,13 @@ define("fireedit/internal/function",
                this.setParent = function(parentFunction) {
                    _parentFunction = parentFunction;
                };
-               
+
                this.getParent = function() {
                    return _parentFunction;
                };
-               
+
                this.contains = function(anotherFunction) {
-                   return ((anotherFunction.endTokenPosition < this.endTokenPosition) 
+                   return ((anotherFunction.endTokenPosition < this.endTokenPosition)
                            && (anotherFunction.lineNo > this.lineNo));
                };
            } ).call(ASTFunction.prototype);
