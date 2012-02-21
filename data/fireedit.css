@@ -1,7 +1,7 @@
 body {
     overflow: hidden;
     color: grey;
-    background-color: grey;
+    background-color: black;
     margin: 0px;
     min-height: 600px;
 }
@@ -83,6 +83,9 @@ div.command-line{
     position: absolute;
     bottom: 0px;
     width: 100%;
+    background-color:black;
+    padding: 0 20px;
+    border: 1px solid grey;
 }
 
 div.command-line input{
