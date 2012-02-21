@@ -9,7 +9,7 @@ body {
 div.editor {
     position: absolute;
     width: 80%;
-    height: 89%;
+    height: 87%;
     display: inline;
 }
 
@@ -17,7 +17,7 @@ div.menu {
     width: 20%;
     background-color: black;
     display: inline-block;
-    height: 89%;
+    height: 87%;
 }
 
 div.picker {
@@ -79,18 +79,20 @@ div.picker .header {
 }
 
 div.command-line{
+    background-color: #222222;
+    bottom: 0;
     clear: both;
+    padding-bottom: 4px;
+    padding-left: 10px;
+    padding-top: 6px;
     position: absolute;
-    bottom: 0px;
     width: 100%;
-    background-color:black;
-    padding: 0 20px;
-    border: 1px solid grey;
 }
 
 div.command-line input{
     margin: 0;
-    width: 100%;
+    margin-left: 4px;
+    width: 95%;
 }
 
 
