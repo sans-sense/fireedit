@@ -1,7 +1,28 @@
 (function() {
+    var processFileContents = function(fileMessage) {
+        document.getElementById('ff-int-path').value = fileMessage.path;
+        document.getElementById('ff-int-field').value = fileMessage.contents;
+        document.defaultView.postMessage("readNew", "*");
+    };
+
+    var localModeRun = function() {
+        return document.location.toString().match(/^file:/);
+    }
+
     var openFileElement = document.getElementById('openFile');
     openFileElement.onclick = function(event) {
-        self.port.emit("openFile", "");
+        
+        if (locaModeRun()) {
+            var urlVal = prompt("Enter File Name");
+            $.ajax({
+                url: urlVal,
+                success: function(data, textStatus, jqXhr){
+                    processFileContents({path:urlVal, contents: jqXhr.responseText});
+                }
+            });
+        } else {
+            self.port.emit("openFile", "");
+        }
         return false;
     };
 
@@ -11,12 +32,16 @@
         return false;
     }
 
+    var helpElement = document.getElementById('helpLink');
+    helpElement.onclick = function(event) {
+        window.open('http://blog.imaginea.com/mViewer');
+    }
 
-    self.port.on("fileContents", function(fileMessage) {
-        document.getElementById('ff-int-path').value = fileMessage.path;
-        document.getElementById('ff-int-field').value = fileMessage.contents;
-        document.defaultView.postMessage("readNew", "*");
-    });
+    document.getElementById('settings').onclick = function(event) {
+        
+    }
+
+    self.port.on("fileContents", processFileContents);
 
     document.defaultView.addEventListener("message", function(event) {
         if (event.data == "readOld") {
