@@ -44,37 +44,38 @@
         </div>
     </div>
     <div class="container-fluid">
-          <div id="menu" class="menu">
-            <!-- rewrite using jquery ui -->
-            <div id="outline-view-container" class="view">
-              <hr/>
-              <div class="view-label">Method Outline</div>
-              <hr/>
-              <div id="outline-view" ></div>
-              <hr/>
-            </div>
+      <div class="row-fluid">
+        <div  class="span3">
+          <!-- rewrite using jquery ui -->
+          <div id="view-container" class="modified-well">
+            <div id="outline-view" class="component" ></div>
           </div>
+        </div>
 
-          <div id="editor" class="editor">
-            Tokenizer.prototype = {
-                get position() {
+        <div id="editor" class="editor span9">
+          Tokenizer.prototype = {
+          get position() {
 
-                },
-               match: function (tt) {
-                   return this.get() == tt || this.unget();
-               }
-            }
+          },
+          match: function (tt) {
+          return this.get() == tt || this.unget();
+          }
+          }
 
-          </div>
+        </div>
 
       </div>
-      <div class="command-line">
+    </div>
+    <div class="command-line">
           <i class="icon-chevron-right icon-white"></i>
           <input type="text" placeholder="Type a command here . . .">
       </div>
      </div>
     </div>
     <div id="footer" >
+    </div>
+    <div id="dynamic-display" style="display:none">
+      <div id="dynamic-display-contents" ></div>
     </div>
     <script src="ace_integration.js" type="text/javascript" charset="utf-8"></script>
     <script src="ace.js" type="text/javascript" charset="utf-8"></script>

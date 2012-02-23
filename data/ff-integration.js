@@ -5,24 +5,9 @@
         document.defaultView.postMessage("readNew", "*");
     };
 
-    var localModeRun = function() {
-        return document.location.toString().match(/^file:/);
-    }
-
     var openFileElement = document.getElementById('openFile');
     openFileElement.onclick = function(event) {
-        
-        if (locaModeRun()) {
-            var urlVal = prompt("Enter File Name");
-            $.ajax({
-                url: urlVal,
-                success: function(data, textStatus, jqXhr){
-                    processFileContents({path:urlVal, contents: jqXhr.responseText});
-                }
-            });
-        } else {
-            self.port.emit("openFile", "");
-        }
+        self.port.emit("openFile", "");
         return false;
     };
 

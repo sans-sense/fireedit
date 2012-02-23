@@ -96,11 +96,11 @@ define("fireedit/view/outline_view",
                    if (self.dirty) {
                        parsedResults = parsedAST;
                        sortedFunctions = functionCombiner.reorganize(functionASTs)
-                       listHtml = '<ul class="citrus">';
+                       listHtml = '            <div class="header-label">Method Outline</div><ul class="citrus">';
                        for ( i = 0; i < sortedFunctions.length; i++) {
                            listHtml += nodeToHtml(sortedFunctions[i]);
                        }
-                       listHtml += "</ul>";
+                       listHtml += "</ul></div>";
                        self.repaintView(listHtml);
                        $('.citrus').citrus();
                        self.dirty = false;
