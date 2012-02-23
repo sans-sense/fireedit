@@ -1,4 +1,10 @@
 (function() {
+    var processFileContents = function(fileMessage) {
+        document.getElementById('ff-int-path').value = fileMessage.path;
+        document.getElementById('ff-int-field').value = fileMessage.contents;
+        document.defaultView.postMessage("readNew", "*");
+    };
+
     var openFileElement = document.getElementById('openFile');
     openFileElement.onclick = function(event) {
         self.port.emit("openFile", "");
@@ -11,12 +17,16 @@
         return false;
     }
 
+    var helpElement = document.getElementById('helpLink');
+    helpElement.onclick = function(event) {
+        window.open('http://blog.imaginea.com/mViewer');
+    }
 
-    self.port.on("fileContents", function(fileMessage) {
-        document.getElementById('ff-int-path').value = fileMessage.path;
-        document.getElementById('ff-int-field').value = fileMessage.contents;
-        document.defaultView.postMessage("readNew", "*");
-    });
+    document.getElementById('settings').onclick = function(event) {
+        
+    }
+
+    self.port.on("fileContents", processFileContents);
 
     document.defaultView.addEventListener("message", function(event) {
         if (event.data == "readOld") {

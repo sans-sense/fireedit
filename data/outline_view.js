@@ -131,7 +131,7 @@ define("fireedit/view/outline_view",
                        generatedContent = liHtml.format(fun.lineNo, fun.name, childUL);
                    }else{
 
-                       generatedContent = liHtml.format(fun.lineNo, fun.name);
+                       generatedContent = liHtml.format(fun.lineNo, fun.name, "");
 
                    }
 

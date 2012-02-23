@@ -1,8 +1,9 @@
 ul.citrus, ul.citrus ul {
     list-style-type: none;
-    background: url('../img/vline_white.png')  transparent repeat-y;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0 10px;
+    font-size:0.95em;
+    /* background: url('../img/vline_white.png')  transparent repeat-y; */
 }
 
 ul.citrus ul {
