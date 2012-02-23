@@ -54,44 +54,6 @@ $(function () {
         jsMode.emitAST(editor.getSession().getDocument().getValue());
     }
 
-    // AN : Hack to make local mode a bit more functional
-    var localModeRun = function() {
-        return document.location.toString().match(/^file:/);
-    }
-
-    if (localModeRun()) {
-        $('#openFile').click(function(event) {
-            var urlVal = prompt("Enter File Name", document.location.toString());
-            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) { 
-                editor.getSession().setValue(responseText);
-            });
-        });
-    }
-    // AN: end of hack
-
-    $('#settings').click(function(event) {
-        var UIManager = require('fireedit/ui/ui_manager').UIManager;
-        var elementSelector = '#dynamic-display';
-        UIManager.openDialog('settings.html', elementSelector, "Settings", function(){
-            UIManager.getElement(elementSelector).attr('title', "Settings");
-            UIManager.getElement(elementSelector).dialog();
-            UIManager.evalNewScript('settings.js');
-        });
-    });
-
-    $('#aboutFireEdit').click(function(event) {
-        var UIManager = require('fireedit/ui/ui_manager').UIManager;
-        var elementSelector = '#dynamic-display';
-        UIManager.openDialog('about.html', elementSelector, "About", function(){
-            UIManager.getElement(elementSelector).attr('title', "About FireEdit");
-            UIManager.getElement(elementSelector).dialog();
-        });
-    });
-
-    $("#reportProblem").click(function(event) {
-        window.open("https://github.com/sans-sense/fireedit/issues");
-    });
-
     window.addEventListener("message", function (event) {
         try {
             var hiddenValueCarrier = document.getElementById('ff-int-field');
@@ -107,7 +69,6 @@ $(function () {
             console.log(error);
         }
     }, false);
-
 
     layout();
 });

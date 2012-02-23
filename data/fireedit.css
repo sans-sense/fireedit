@@ -118,24 +118,6 @@
     border-radius: 0;
 }
 
-/* AN: copied from well differs in the color  removed padding and color*/
-.modified-well {
-    border: 1px solid grey;
-    border-radius: 4px 4px 4px 4px;
-    box-shadow: 0 1px 1px grey inset;
-    margin: 20px 0px 0px 10px;
-    min-height: 20px;
-}
-
-.modified-well .component .header-label {
-    border: 1px solid grey;
-    box-shadow: 0 1px 1px grey inset;
-    padding: 5px 0px 0px 20px;
-    min-height: 20px;
-    background-color:#FAFAFA;
-    color:#333333;
-}
-
 .tab-content{
     height: 95%;
 }
@@ -158,5 +140,3 @@
 #edit-area > .tab-content > div{
     position: relative;
 }
-
-.ui-dialog-titlebar { display:none; }
