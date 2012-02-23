@@ -54,6 +54,29 @@ $(function () {
         jsMode.emitAST(editor.getSession().getDocument().getValue());
     }
 
+    // AN : Hack to make local mode a bit more functional
+    var localModeRun = function() {
+        return document.location.toString().match(/^file:/);
+    }
+
+    var openFileByUrl = function(urlVal) {
+        $.ajax({
+            url: urlVal,
+            success: function(data, textStatus, jqXhr){
+                editor.getSession().setValue(jqXhr.responseText);
+            }
+        });
+    };
+
+    if (localModeRun()) {
+        document.getElementById('openFile').onclick = function(event) {
+            var urlVal = prompt("Enter File Name", document.location.toString());
+            openFileByUrl(urlVal);
+            return false;
+        };
+    }
+    // AN: end of hack
+
     window.addEventListener("message", function (event) {
         try {
             var hiddenValueCarrier = document.getElementById('ff-int-field');
@@ -69,6 +92,7 @@ $(function () {
             console.log(error);
         }
     }, false);
+
 
     layout();
 });
