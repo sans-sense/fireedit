@@ -12,13 +12,13 @@ ul.citrus ul {
 
 ul.citrus li {
     margin: 0;
-    padding: 0 22px;
+    padding: 0 10px 0 22px;
     line-height: 20px;
     background: url('../img/node_white.png') transparent no-repeat;
 }
 
 ul.citrus li:last-child {
-    background: url('../img/lastnode_white.png') #000 no-repeat;
+    background: url('../img/lastnode_white.png') #111 no-repeat;
 }
 
 ul.citrus li span.expander{
