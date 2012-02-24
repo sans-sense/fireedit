@@ -127,6 +127,24 @@
     height: 100%;
 }
 
+.modified-well .component .header-label {
+    border: 1px solid grey;
+    box-shadow: 0 1px 1px grey inset;
+    padding: 5px 0px 0px 20px;
+    min-height: 20px;
+    background-color:#FAFAFA;
+    color:#333333;
+}
+
+.tab-content{
+    height: 95%;
+}
+
+
+.tab-content > div{
+    height: 100%;
+}
+
 .sidebar .tab-content > div{
     padding-left: 8px;
     overflow: auto;
@@ -140,3 +158,5 @@
 #edit-area > .tab-content > div{
     position: relative;
 }
+
+.ui-dialog-titlebar { display:none; }
