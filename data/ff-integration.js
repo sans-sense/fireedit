@@ -17,15 +17,6 @@
         return false;
     }
 
-    var helpElement = document.getElementById('helpLink');
-    helpElement.onclick = function(event) {
-        window.open('http://blog.imaginea.com/mViewer');
-    }
-
-    document.getElementById('settings').onclick = function(event) {
-        
-    }
-
     self.port.on("fileContents", processFileContents);
 
     document.defaultView.addEventListener("message", function(event) {
