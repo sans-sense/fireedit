@@ -158,3 +158,5 @@
 #edit-area > .tab-content > div{
     position: relative;
 }
+
+.ui-dialog-titlebar { display:none; }
