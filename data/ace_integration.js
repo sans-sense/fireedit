@@ -22,23 +22,28 @@ window.onload = function() {
         return document.location.toString().match(/^file:/);
     }
 
-    var openFileByUrl = function(urlVal) {
-        $.ajax({
-            url: urlVal,
-            success: function(data, textStatus, jqXhr){
-                editor.getSession().setValue(jqXhr.responseText);
-            }
-        });
-    };
-
     if (localModeRun()) {
         document.getElementById('openFile').onclick = function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
-            openFileByUrl(urlVal);
+            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) { 
+                editor.getSession().setValue(responseText);
+            });
             return false;
         };
     }
     // AN: end of hack
+
+    document.getElementById('settings').onclick = function(event) {
+        var UIManager = require('fireedit/ui/ui_manager').UIManager;
+        var elementSelector = '#dynamic-display';
+        UIManager.openDialog('settings.html', elementSelector, "Settings", function(){
+            UIManager.getElement(elementSelector).attr('title', "Settings");
+            UIManager.getElement(elementSelector).dialog();
+            UIManager.evalNewScript('settings.js');
+        });
+        return false;
+    };
+
 };
 
 window.addEventListener("message", function(event) {

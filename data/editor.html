@@ -1,38 +1,46 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>FireEdit - "The" JS Editor</title>
-        <link href="css/bootstrap.min.css" type="text/css" rel="stylesheet"/>
-        <link href="fireedit.css" type="text/css" rel="stylesheet"/>
-        <link href="css/jquery.citrus.css" type="text/css" rel="stylesheet"/>
-    </head>
-    <body>
-        <div id="main-nav" class="navbar navbar-fixed-top fullwide">
-            <div class="navbar-inner">
-                <div class="container-fluid">
-                    <ul class="nav">
-                        <li>
-                            <a href="#" id="nav-collapser">
-                                <i class="icon-eye-close icon-white"></i>
-                            </a>
-                        </li>
-                    </ul>
-
-                    <ul class="nav nav-collapse">
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                                File
-                                <b class="caret"></b>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#" id="newFile"><i class="icon-file icon-white"></i>New</a></li>
-                                <li><a href="#" id="openFile"><i class="icon-folder-open icon-white"></i>Open</a></li>
-                                <li><a href="#" id="saveFile"><i class="icon-download-alt icon-white"></i>Save</a></li>
-                            </ul>
-                        </li>
-                    </ul>
-                    <a href="#" class="brand"><i class="icon-fire icon-white"></i> FireEdit</a>
-                </div>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>FireEdit - "The" JS Editor</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="fireedit.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="css/jquery.citrus.css"/>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/vader.jquery.ui.custom.css"/>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <ul class="nav">
+                </ul>
+                <div class="btn-toolbar span9">
+                    <div class="btn-group">
+                        <a class="btn" id="newFile">
+                            <i class="icon-file"></i> New
+                        </a>
+                        <a class="btn" id="openFile">
+                            <i class="icon-folder-open"></i> Open
+                        </a>
+                        <a class="btn" id="saveFile">
+                            <i class="icon-download-alt"></i> Save
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a class="btn" id="settings">
+                            <i class="icon-asterisk"></i> Settings
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a class="btn" id="helpLink">
+                            <i class="icon-comment"></i> Help
+                        </a>
+                    </div>
+              </div>
+                <a class="brand" href="#">
+                    FireEdit
+                </a>
             </div>
         </div>
 
@@ -56,17 +64,8 @@
                         <li class="active"><a href="#editor-file001" data-toggle="tab">File001</a></li>
                         <li><a href="#editor-file002" data-toggle="tab">File002</a></li>
                     </ul>
-
-                    <div class="tab-content">
-                        <div class="tab-pane active" id="editor-file001">
-Tokenizer.prototype = {
-    get position() {
-
-    },
-    match: function (tt) {
-        return this.get() == tt || this.unget();
-    }
-}
+      </div>
+    </div>
                         </div>
                         <div class="tab-pane" id="editor-file002">File002</div>
                     </div>
