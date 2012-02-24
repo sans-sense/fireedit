@@ -1,3 +1,6 @@
+// AN : we use the editor from multiple points
+var editor;
+
 $(function () {
 
     var layout = function () {
