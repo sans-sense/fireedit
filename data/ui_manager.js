@@ -1,13 +1,26 @@
 define("fireedit/ui/ui_manager", 
        ["require", "exports", "module", "jquery"],
        function(require, exports, module) {
+           var localModeRun = function() {
+               return document.location.toString().match(/^file:/);
+           };
+
            var doWithUrl = function(urlVal, callback) {
-               $.ajax({
-                   url: urlVal,
-                   success: function(data, textStatus, jqXhr){
-                       callback(jqXhr.responseText);
-                   }
-               });
+               if (localModeRun()) {
+                   $.ajax({
+                       url: urlVal,
+                       success: function(data, textStatus, jqXhr){
+                           callback(jqXhr.responseText);
+                       }
+                   }).fail(function() {
+                       callback("problems retriving data from " + urlVal);
+                   });
+               } else {
+                   var fileExt = urlVal.substring(urlVal.lastIndexOf(".") + 1);
+                   var fileName = urlVal.substring(0, urlVal.lastIndexOf("."));
+                   callback($("#hiddenContent_"+fileName + "_" + fileExt).html())
+               }
+
            };
 
            var setInnerContents = function(element, contentUrl, callback) {
