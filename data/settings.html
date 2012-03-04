@@ -1,21 +1,21 @@
 <div  id="settingsModal">
   <div>
-    <form>
+    <form class="form-horizontal">
       <fieldset>
         <div class="control-group">
-          <label class="control-label" for="input01">Settings File</label>
+          <label class="control-label" for="settings-file">Settings File</label>
           <div class="controls">
             <input type="text" class="input-xlarge" id="settings-file" />
           </div>
         </div>
         <div class="control-group">
-          <label for="optionsCheckbox" class="control-label">Enable JS Hint</label>
+          <label for="enableJSHint" class="control-label">Enable JS Hint</label>
           <div class="controls">
             <input type="checkbox" id="enableJSHint" checked="true" name="enableJSHint" />
           </div>
         </div>
         <div class="control-group">
-          <label for="optionsCheckbox" class="control-label">Show Line Gutter</label>
+          <label for="showLineGutter" class="control-label">Show Line Gutter</label>
           <div class="controls">
             <input type="checkbox" id="showLineGutter" checked="true" name="showLineGutter" />
           </div>
@@ -23,8 +23,7 @@
       </fieldset>
     </form>
   </div>
-  <div>
+  <div class="pull-right">
     <a href="#" class="btn btn-primary" id="settings-dialog-save">Save changes</a>
-    <a href="#" class="btn" id="settings-dialog-close">Close</a>
   </div>
 </div>
