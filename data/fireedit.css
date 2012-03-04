@@ -14,7 +14,7 @@
 }
 
 .navbar .nav > li > a {
-    padding: 5px 0 0 0;
+    padding: 5px 14px 0 0;
 }
 
 .navbar > .navbar-inner > .container-fluid{
@@ -160,3 +160,28 @@
 }
 
 .ui-dialog-titlebar { display:none; }
+
+.modal{
+    background-color: #000;
+    color: #EEE;
+    border-color: #222;
+    box-shadow:0 2px 4px 3px #555555;
+}
+
+.modal > .modal-header{
+    border-bottom-color: #222;
+}
+
+.modal > .modal-header > h3 {
+    color: #EEE;
+}
+
+.modal form{
+    margin-bottom: 3px;
+}
+
+.modal .btn{
+    margin-bottom: 10px;
+}
+
+

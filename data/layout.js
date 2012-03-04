@@ -76,8 +76,9 @@ $(function () {
         var UIManager = require('fireedit/ui/ui_manager').UIManager;
         var elementSelector = '#dynamic-display';
         UIManager.openDialog('settings.html', elementSelector, "Settings", function(){
-            UIManager.getElement(elementSelector).attr('title', "Settings");
-            UIManager.getElement(elementSelector).dialog();
+            //UIManager.getElement(elementSelector).attr('title', "Settings");
+            UIManager.getElement(elementSelector).children(".modal-header").children("h3").html("Settings");
+            UIManager.getElement(elementSelector).modal();
             UIManager.evalNewScript('settings.js');
         });
     });
@@ -86,8 +87,9 @@ $(function () {
         var UIManager = require('fireedit/ui/ui_manager').UIManager;
         var elementSelector = '#dynamic-display';
         UIManager.openDialog('about.html', elementSelector, "About", function(){
-            UIManager.getElement(elementSelector).attr('title', "About FireEdit");
-            UIManager.getElement(elementSelector).dialog();
+            //UIManager.getElement(elementSelector).attr('title', "About FireEdit");
+            UIManager.getElement(elementSelector).children(".modal-header").children("h3").html("About FireEdit");
+            UIManager.getElement(elementSelector).modal();
         });
     });
 
