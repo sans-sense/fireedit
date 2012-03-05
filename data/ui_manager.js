@@ -37,10 +37,10 @@ define("fireedit/ui/ui_manager",
                    if (!(callback)) {
                        callback = function() {
                            element.attr('title', title)
-                           element.dialog();
+                           element.modal();
                        }
                    }
-                   setInnerContents(element, contentUrl, callback);
+                   setInnerContents(element.children(".modal-body"), contentUrl, callback);
                },
                openUrl: function(contentUrl, callback) {
                    doWithUrl(contentUrl, callback);

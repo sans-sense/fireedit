@@ -62,23 +62,40 @@ $(function () {
         return document.location.toString().match(/^file:/);
     }
 
-    var openFileByUrl = function(urlVal) {
-        $.ajax({
-            url: urlVal,
-            success: function(data, textStatus, jqXhr){
-                editor.getSession().setValue(jqXhr.responseText);
-            }
-        });
-    };
-
     if (localModeRun()) {
-        document.getElementById('openFile').onclick = function(event) {
+        $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
-            openFileByUrl(urlVal);
-            return false;
-        };
+            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) { 
+                editor.getSession().setValue(responseText);
+            });
+        });
     }
     // AN: end of hack
+
+    $('#settings').click(function(event) {
+        var UIManager = require('fireedit/ui/ui_manager').UIManager;
+        var elementSelector = '#dynamic-display';
+        UIManager.openDialog('settings.html', elementSelector, "Settings", function(){
+            //UIManager.getElement(elementSelector).attr('title', "Settings");
+            UIManager.getElement(elementSelector).children(".modal-header").children("h3").html("Settings");
+            UIManager.getElement(elementSelector).modal();
+            UIManager.evalNewScript('settings.js');
+        });
+    });
+
+    $('#aboutFireEdit').click(function(event) {
+        var UIManager = require('fireedit/ui/ui_manager').UIManager;
+        var elementSelector = '#dynamic-display';
+        UIManager.openDialog('about.html', elementSelector, "About", function(){
+            //UIManager.getElement(elementSelector).attr('title', "About FireEdit");
+            UIManager.getElement(elementSelector).children(".modal-header").children("h3").html("About FireEdit");
+            UIManager.getElement(elementSelector).modal();
+        });
+    });
+
+    $("#reportProblem").click(function(event) {
+        window.open("https://github.com/sans-sense/fireedit/issues");
+    });
 
     window.addEventListener("message", function (event) {
         try {
