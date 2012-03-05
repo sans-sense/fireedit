@@ -27,6 +27,7 @@ ul.citrus li span.expander{
     margin-top: 2px;
     padding: 4px 2px 0 0;
     width: 10px;
+    cursor: pointer;
 }
 
 ul.citrus li.collapsed > span.expander{
@@ -34,4 +35,17 @@ ul.citrus li.collapsed > span.expander{
 }
 ul.citrus li.expanded > span.expander{
     background: url("../img/collapse_white.gif") transparent no-repeat left bottom;
+}
+
+.citrus-control{
+    float: right;
+}
+
+.citrus-control span{
+    cursor: pointer;
+    padding: 2px;
+}
+
+ul.citrus{
+    padding-top: 12px;
 }

@@ -36,11 +36,15 @@ define("fireedit/ui/ui_manager",
                    var element = $(elementSelector);
                    if (!(callback)) {
                        callback = function() {
-                           element.attr('title', title)
-                           element.modal();
                        }
                    }
-                   setInnerContents(element.children(".modal-body"), contentUrl, callback);
+                   setInnerContents(element.children(".modal-body"), contentUrl, function(){
+                       element.children(".modal-header").children("h3").html(title);
+                       element.modal();
+                       element.draggable();
+                       if(callback)
+                        callback();
+                   });
                },
                openUrl: function(contentUrl, callback) {
                    doWithUrl(contentUrl, callback);
