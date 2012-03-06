@@ -65,8 +65,9 @@ $(function () {
     if (localModeRun()) {
         $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
-            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) { 
-                editor.getSession().setValue(responseText);
+            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
+                document.getElementById('ff-int-path').value = urlVal;
+                 editor.getSession().setValue(responseText);
             });
         });
     }

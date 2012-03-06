@@ -17,12 +17,6 @@
         return false;
     };
 
-    // document.getElementById('settings').onclick = function(event) {
-    //     ResourceManager.getFileContents("settings.html", function(urlContents) { 
-    //         document.defaultView.postMessage("urlContents", {data:urlContents});
-    //     });        
-    // }
-
     self.port.on("fileContents", processFileContents);
 
     document.defaultView.addEventListener("message", function(event) {
@@ -32,8 +26,8 @@
     });
 
     var ResourceManager = {
-        callbacks: {},
-        getFileContents: function(url, callback) {
+        callbacks:  {},
+        doWithUrl: function(url, callback) {
             var unique_stamp = url + Date.now();
             self.port.emit("getUrl", {"path": url, "callerId": unique_stamp});
             ResourceManager.callbacks[unique_stamp] = callback;
@@ -52,6 +46,6 @@
     }
     self.port.on("urlContents", processUrlContents);
 
-    document.defaultView.ffResourceManager = ResourceManager;
+    unsafeWindow.ffResourceManager = ResourceManager;
     console.log("value of windows is " + document.defaultView);
 }());

@@ -16,9 +16,7 @@ define("fireedit/ui/ui_manager",
                        callback("problems retriving data from " + urlVal);
                    });
                } else {
-                   var fileExt = urlVal.substring(urlVal.lastIndexOf(".") + 1);
-                   var fileName = urlVal.substring(0, urlVal.lastIndexOf("."));
-                   callback($("#hiddenContent_"+fileName + "_" + fileExt).html())
+                   window.ffResourceManager.doWithUrl(urlVal, callback);
                }
 
            };
