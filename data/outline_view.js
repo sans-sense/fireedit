@@ -97,8 +97,8 @@ define("fireedit/view/outline_view",
                        parsedResults = parsedAST;
                        sortedFunctions = functionCombiner.reorganize(functionASTs)
                        listHtml = '<div class="citrus-control" id="outline-tree-control">' +
-                           '<span class="icon-resize-full icon-white expand-control"></span>' +
-                           '<span class="icon-resize-small icon-white collapse-control"></span>' +
+                           '<span class="icon-resize-full icon-white expand-control" title="expand all"></span>' +
+                           '<span class="icon-resize-small icon-white collapse-control" title="collapse all"></span>' +
                            '</div>';
                        listHtml += '<ul class="citrus" id="outline-tree">';
                        for ( i = 0; i < sortedFunctions.length; i++) {
