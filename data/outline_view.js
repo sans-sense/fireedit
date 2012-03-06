@@ -115,7 +115,7 @@ define("fireedit/view/outline_view",
                        viewUI.innerHTML = listHtml;
                };
                this.handleNavigation = function(clickEvent) {
-                   var lineNo = clickEvent.target.getAttribute("class");
+                   var lineNo = $(clickEvent.target).data("lineno");
                    if (lineNo) {
                        editor.gotoLine(parseInt(lineNo) + 1);
                        editor.focus();
@@ -124,7 +124,7 @@ define("fireedit/view/outline_view",
                var nodeToHtml = function(decoratedNode) {
                    var liHtml, i, generatedContent, fun = decoratedNode.originalFunction;
                    var nodeChildren = decoratedNode.getChildren();
-                   liHtml = "<li class='[0]'>[1][2]</li>";
+                   liHtml = "<li data-lineno='[0]'>[1][2]</li>";
 
                    if (nodeChildren.length > 0) {
                        var childUL =  "<ul>";
