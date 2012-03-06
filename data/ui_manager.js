@@ -32,7 +32,7 @@ define("fireedit/ui/ui_manager",
 
            // Static object for mantaining a loose coupling between jquery and the actual ui
            var UIManager = {
-               openDialog: function(contentUrl, elementSelector, title, callback) {
+               openModalDialog: function(contentUrl, elementSelector, title, callback) {
                    var element = $(elementSelector);
                    if (!(callback)) {
                        callback = function() {
@@ -45,6 +45,12 @@ define("fireedit/ui/ui_manager",
                        if(callback)
                         callback();
                    });
+               },
+               openDialog: function(contentUrl, elementSelector, title, callback){
+                   UIManager.openModalDialog(contentUrl,elementSelector,title,function(){
+                        $('.modal-backdrop').hide();
+                        if(callback) callback();
+                    });
                },
                openUrl: function(contentUrl, callback) {
                    doWithUrl(contentUrl, callback);
