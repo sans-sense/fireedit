@@ -96,13 +96,17 @@ define("fireedit/view/outline_view",
                    if (self.dirty) {
                        parsedResults = parsedAST;
                        sortedFunctions = functionCombiner.reorganize(functionASTs)
-                       listHtml = '<ul class="citrus">';
+                       listHtml = '<div class="citrus-control" id="outline-tree-control">' +
+                           '<span class="icon-resize-full icon-white expand-control"></span>' +
+                           '<span class="icon-resize-small icon-white collapse-control"></span>' +
+                           '</div>';
+                       listHtml += '<ul class="citrus" id="outline-tree">';
                        for ( i = 0; i < sortedFunctions.length; i++) {
                            listHtml += nodeToHtml(sortedFunctions[i]);
                        }
                        listHtml += "</ul>";
                        self.repaintView(listHtml);
-                       $('.citrus').citrus();
+                       $('.citrus').citrus({'controller':$('#outline-tree-control')});
                        self.dirty = false;
                    };
                };
