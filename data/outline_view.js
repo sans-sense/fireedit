@@ -2,9 +2,10 @@
 var parsedResults, sortedFunctions;
 
 define("fireedit/view/outline_view", 
-       ["require", "exports", "module", "jquery", "jquery.citrus", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer", "fireedit/graph/function_combiner", "fireedit/graph/decorated_node"],
+       ["require", "exports", "module", "jquery", "jquery.citrus", "pilot/oop", "pilot/event_emitter", "fireedit/view/view", "fireedit/internal/function", "fireedit/internal/function_namer", "fireedit/graph/function_combiner", "fireedit/graph/decorated_node", "fireedit/core/application"],
        function(require, exports, module) {
            var View = require("fireedit/view/view").View;
+           var application = require('fireedit/core/application').application;
            var viewDictionary = {};
            var oop = require("pilot/oop");
            var ASTFunction = require("fireedit/internal/function").ASTElement;
@@ -116,6 +117,7 @@ define("fireedit/view/outline_view",
                };
                this.handleNavigation = function(clickEvent) {
                    var lineNo = clickEvent.target.getAttribute("class");
+                   var editor = application.getCurrentEditor();
                    if (lineNo) {
                        editor.gotoLine(parseInt(lineNo) + 1);
                        editor.focus();

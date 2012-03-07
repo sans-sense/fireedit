@@ -47,5 +47,4 @@
     self.port.on("urlContents", processUrlContents);
 
     unsafeWindow.ffResourceManager = ResourceManager;
-    console.log("value of windows is " + document.defaultView);
 }());

@@ -1,7 +1,6 @@
-// AN : we use the editor from multiple points
-var editor;
-
 $(function () {
+
+    var application = require('fireedit/core/application').application;
 
     var layout = function () {
         var fullHeight = $(document).height();
@@ -41,8 +40,9 @@ $(function () {
     }
 
     var setupEditor = function () {
-        window.editor = ace.edit("editor-file001");
+        var editor = ace.edit("editor-file001");
         editor.setTheme("ace/theme/twilight");
+        application.setCurrentEditor(editor);
 
         var JavaScriptMode = require("fireedit/mode/enh_javascript").Mode;
         var jsMode = new JavaScriptMode();
@@ -62,13 +62,15 @@ $(function () {
         return document.location.toString().match(/^file:/);
     }
 
-    if (localModeRun()) {
+    if (application.localModeRun()) {
         $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
-            require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
-                document.getElementById('ff-int-path').value = urlVal;
-                 editor.getSession().setValue(responseText);
-            });
+            if (urlVal && urlVal.length > 0) {
+                require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
+                    application.setCurrentEditorUrl(urlVal);
+                    application.setCurrentEditorContent(responseText);
+                });
+            }
         });
     }
     // AN: end of hack
@@ -96,10 +98,11 @@ $(function () {
             var hiddenValueCarrier = document.getElementById('ff-int-field');
             if (event.data == "readNew") {
                 console.log("got the readNew message");
-                editor.getSession().setValue(hiddenValueCarrier.value);
+                application.setCurrentEditorUrl();
+                application.setCurrentEditorContent();
             } else if (event.data == "copyOld") {
                 console.log("got the copyOld message");
-                hiddenValueCarrier.value = editor.getSession().doc.getAllLines().join("\n");
+                hiddenValueCarrier.value = application.getCurrentEditor().getSession().doc.getAllLines().join("\n");
                 document.defaultView.postMessage("readOld", "*");
             }
         } catch (error) {

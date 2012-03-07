@@ -1,12 +1,10 @@
 define("fireedit/ui/ui_manager", 
-       ["require", "exports", "module", "jquery"],
+       ["require", "exports", "module", "jquery", "fireedit/core/application"],
        function(require, exports, module) {
-           var localModeRun = function() {
-               return document.location.toString().match(/^file:/);
-           };
+           var application = require('fireedit/core/application').application;
 
            var doWithUrl = function(urlVal, callback) {
-               if (localModeRun()) {
+               if (application.localModeRun()) {
                    $.ajax({
                        url: urlVal,
                        success: function(data, textStatus, jqXhr){
@@ -56,7 +54,11 @@ define("fireedit/ui/ui_manager",
                evalNewScript: function(contentUrl) {
                    doWithUrl(contentUrl, function(responseText) {
                        var newFunction = Function(responseText);
-                       newFunction();
+                       try{
+                           newFunction();
+                       } catch(e) {
+                           alert(e);
+                       }
                    });
                },
                getElement: function(elementSelector) {
