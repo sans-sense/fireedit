@@ -155,6 +155,18 @@
     padding-top: 2px;
 }
 
+#aboutModal p{
+    font-family:Menlo,Monaco,"Courier New",monospace;
+    font-size:12px;
+    color:#EEE;
+    line-height: 14px;
+    margin: 0 0 4px;
+}
+
+#aboutModal a{
+    line-height: 30px;
+}
+
 #edit-area > .tab-content > div{
     position: relative;
 }
@@ -184,4 +196,8 @@
     margin-bottom: 10px;
 }
 
+.icon-adjust.icon-fx{
+    background-image: url('img/fx_white.png');
+    background-position: 0 0;
+}
 
