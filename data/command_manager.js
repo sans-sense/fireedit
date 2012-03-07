@@ -33,7 +33,7 @@ define("fireedit/core/command_manager",
                browserOverrideCommands.push({
                    name:"save file",
                    bindKey:bindKey("Ctrl-s"),
-                   exec: function(env, args, request) { simulateClick(document.getElementById('savFeile')); return false;}
+                   exec: function(env, args, request) { simulateClick(document.getElementById('saveFile')); return false;}
                });
                
                this.addBrowserOverrides = function() {

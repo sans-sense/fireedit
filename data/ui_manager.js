@@ -4,7 +4,7 @@ define("fireedit/ui/ui_manager",
            var application = require('fireedit/core/application').application;
 
            var doWithUrl = function(urlVal, callback) {
-               if (application.localModeRun()) {
+               if (application.localModeRun() || urlVal.match(/^file:/)) {
                    $.ajax({
                        url: urlVal,
                        success: function(data, textStatus, jqXhr){
@@ -24,7 +24,7 @@ define("fireedit/ui/ui_manager",
                    element.html(responseText);
                    setTimeout(callback, 0);
                });
-           }
+           };
 
            // Static object for mantaining a loose coupling between jquery and the actual ui
            var UIManager = {
@@ -32,7 +32,7 @@ define("fireedit/ui/ui_manager",
                    var element = $(elementSelector);
                    if (!(callback)) {
                        callback = function() {
-                       }
+                       };
                    }
                    setInnerContents(element.children(".modal-body"), contentUrl, function(){
                        element.children(".modal-header").children("h3").html(title);
@@ -53,11 +53,15 @@ define("fireedit/ui/ui_manager",
                },
                evalNewScript: function(contentUrl) {
                    doWithUrl(contentUrl, function(responseText) {
-                       var newFunction = Function(responseText);
-                       try{
-                           newFunction();
-                       } catch(e) {
-                           alert(e);
+                       if (responseText && responseText.match(/^problems/)) {
+                           // do nothing
+                       } else {
+                           var newFunction = Function(responseText);
+                           try{
+                               newFunction();
+                           } catch(e) {
+                               alert(e);
+                           }
                        }
                    });
                },

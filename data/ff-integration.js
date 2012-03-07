@@ -6,16 +6,20 @@
     };
 
     var openFileElement = document.getElementById('openFile');
-    openFileElement.onclick = function(event) {
-        self.port.emit("openFile", "");
-        return false;
-    };
+    if (openFileElement) {
+        openFileElement.onclick = function(event) {
+            self.port.emit("openFile", "");
+            return false;
+        };
+    }
 
     var saveFileElement = document.getElementById('saveFile');
-    saveFileElement.onclick = function(event) {
-        document.defaultView.postMessage("copyOld", "*");
-        return false;
-    };
+    if (saveFileElement) {
+        saveFileElement.onclick = function(event) {
+            document.defaultView.postMessage("copyOld", "*");
+            return false;
+        };
+    }
 
     self.port.on("fileContents", processFileContents);
 
@@ -25,6 +29,7 @@
         }
     });
 
+    // TODO change this to use the singleton style, execute should not escape
     var ResourceManager = {
         callbacks:  {},
         doWithUrl: function(url, callback) {
@@ -43,7 +48,7 @@
 
     var processUrlContents = function(responseData) {
         ResourceManager.execute(responseData.callerId, responseData.contents);
-    }
+    };
     self.port.on("urlContents", processUrlContents);
 
     unsafeWindow.ffResourceManager = ResourceManager;

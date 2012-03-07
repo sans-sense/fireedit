@@ -55,6 +55,7 @@ $(function () {
         var outlineView = new OutlineView(jsMode, document.getElementById("sidebar-outline"));
 
         jsMode.emitAST(editor.getSession().getDocument().getValue());
+        editor.focus();
     }
 
     // AN : Hack to make local mode a bit more functional
