@@ -196,4 +196,8 @@
     margin-bottom: 10px;
 }
 
+.icon-adjust.icon-fx{
+    background-image: url('img/fx_white.png');
+    background-position: 0 0;
+}
 

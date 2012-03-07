@@ -27,15 +27,26 @@ define('jquery.citrus', ['jquery'],
                     event.stopPropagation();
                 });
 
-                if(options.controller){
+                if (options.controller) {
 
-                    var controller = options.controller;
-                    controller.children(".expand-control").click(function(event){
+                    this.data('controller', options.controller);
+
+                    var controller = $(options.controller);
+
+                    if (controller.children(".expand-control").length == 0) {
+                        $('<span class="icon-resize-full icon-white expand-control" title="expand all"></span>').appendTo(controller);
+                    }
+
+                    controller.children(".expand-control").click(function (event) {
                         treeRoot.citrus("expandAll");
                         event.stopPropagation();
                     });
 
-                    controller.children(".collapse-control").click(function(event){
+                    if (controller.children(".collapse-control").length == 0) {
+                        $('<span class="icon-resize-small icon-white collapse-control" title="collapse all"></span>').appendTo(controller);
+                    }
+
+                    controller.children(".collapse-control").click(function (event) {
                         treeRoot.citrus("collapseAll");
                         event.stopPropagation();
                     });
@@ -43,24 +54,51 @@ define('jquery.citrus', ['jquery'],
 
                 return this;
             },
+            addToControls:function (html, actionFunction) {
+                if (this.data('controller').length > 0) {
+                    var controller = this.data('controller');
+                    var tree = this;
+                    $(html).appendTo(controller).click(function(event){
+                        actionFunction.call(tree,event);
+                    });
+                }
+            },
             expandAll:function () {
                 var collapsed = this.find('li.collapsed');
                 collapsed.each(function () {
-                    $(this).children('ul').show();
-                    $(this).toggleClass('collapsed expanded');
+                    var node = $(this);
+                    node.children('ul').show();
+                    node.removeClass('collapsed');
+                    node.addClass('expanded');
                 });
                 return this;
             },
             collapseAll:function () {
                 var expanded = this.find('li.expanded');
                 expanded.each(function () {
-                    $(this).children('ul').hide();
-                    $(this).toggleClass('collapsed expanded');
+                    var node = $(this);
+                    node.children('ul').hide();
+                    node.removeClass('expanded');
+                    node.addClass('collapsed');
                 });
                 return this;
             },
             expandLevel:function (level) {
                 //TODO: Implement exand to level
+                return this;
+
+            },
+            highlightNode:function (dataType, value) {
+                var query = 'li[data-' + dataType + '="' + value + '"]';
+                var nodeToHighlight = this.find(query);
+                var collapsed = nodeToHighlight.parentsUntil(this, 'li.collapsed');
+                collapsed.each(function () {
+                    var node = $(this);
+                    node.children('ul').show();
+                    node.removeClass('collapsed');
+                    node.addClass('expanded');
+                });
+                nodeToHighlight.effect("highlight", {}, 'slow');
                 return this;
 
             }
