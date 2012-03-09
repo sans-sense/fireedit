@@ -39,11 +39,15 @@ ul.citrus li.expanded > span.expander{
 
 .citrus-control{
     float: right;
+    /* border: 1px solid #a47e3c; */
+    line-height: 0;
 }
 
 .citrus-control span{
+    background-origin: content-box;
+    border: 1px solid #a47e3c;
     cursor: pointer;
-    padding: 2px;
+    padding: 1px 2px 1px 2px;
 }
 
 ul.citrus{
