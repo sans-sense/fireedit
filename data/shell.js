@@ -41,6 +41,7 @@ define("fireedit/shell",
 
            var execute = function(commandName, args) {
                get(commandName).fn.apply(app, args);
+               require('fireedit/core/application').application.getCurrentEditor().focus();
            };
 
            exports.shell = {

@@ -13,8 +13,9 @@ define("fireedit/shell-commands",
                fn: function(fname) {
                    for(var i = 0; i < sortedFunctions.length; i++) {
                        var f = sortedFunctions[i];
-                       f._name === fname 
-                           && this.getCurrentEditor().gotoLine(f._lineNo);
+                       if (f._name === fname ) {
+                           this.getCurrentEditor().gotoLine(f._lineNo);
+                       }
                    }
                }
            };
