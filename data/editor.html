@@ -76,6 +76,13 @@
 
                     <div class="tab-content">
                         <div class="tab-pane active" id="editor-file001" tabIndex="1">// Write your js contents in the scratchpad
+function foo() {
+    var msg = "hello";
+};
+
+function bar() {
+    var msg = "world";
+};                          
                         </div>
                     </div>
                 </div>
@@ -85,7 +92,7 @@
             <div class="row-fluid">
                 <div class="span12">
                     <i class="icon-chevron-right icon-white"></i>
-                    <input type="text" placeholder="type your command . . ." class="xx-large cmd-line"/>
+                    <input id="command-line" type="text" placeholder="type your command . . ." class="xx-large cmd-line"/>
                 </div>
             </div>
         </div>
@@ -115,7 +122,13 @@
         <script src="function_combiner.js" type="text/javascript" charset="utf-8"></script>
         <script src="outline_view.js" type="text/javascript" charset="utf-8"></script>
         <script src="customizer.js" type="text/javascript"></script>
-        
+
+        <script src="shell.js" type="text/javascript"></script>
+        <script src="shell-commands.js" type="text/javascript"></script>
+        <script src="command-line-view.js" type="text/javascript"></script>
+        <script src="command-line-controller.js" type="text/javascript"></script>
+
+
         <input type="hidden" id="ff-int-field"/>
         <input type="hidden" id="ff-int-path"/>
     </body>

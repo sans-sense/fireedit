@@ -56,6 +56,12 @@ $(function () {
 
         jsMode.emitAST(editor.getSession().getDocument().getValue());
         editor.focus();
+
+        require("fireedit/shell-commands").commands.register();
+        var commandLineView = require("fireedit/command-line-view").view;
+        var commandLineController = require("fireedit/command-line-controller").controller;
+        commandLineView.bindTo($('#command-line'));
+        commandLineController.bindTo(commandLineView);
     }
 
     // AN : Hack to make local mode a bit more functional
