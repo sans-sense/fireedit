@@ -1,6 +1,7 @@
 var UIManager = require('fireedit/ui/ui_manager').UIManager;
 var commandManager = require("fireedit/core/command_manager").commandManager;
 var application = require('fireedit/core/application').application;
+var customizer = require('fireedit/ext/customizer').customizer;
 
 var dialogSelector = '#dynamic-display';
 var settingKey = "added-browser-overrides";
@@ -19,18 +20,15 @@ function modifyBrowserOverrides(add) {
     }
 }
 
-document.getElementById('settings-dialog-save').onclick = function() {
-    var settingsFileUrl, overrideBrowserKeys, existingSettringsFileUrl;
-    overrideBrowserKeys = $('#overrideBrowserKeys').is(":checked");
-    modifyBrowserOverrides(overrideBrowserKeys);
-    settingsFileUrl = $('#settings-file');
-    $(dialogSelector).modal('hide');
+function applySettingsFile() {
+    var settingsFileUrl, existingSettingsFileUrl;
+
     existingSettingsFileUrl = application.getSettingValue(settingsUrlKey);
     settingsFileUrl = $('#settings-file').attr('value');
     if (settingsFileUrl.length > 0) {
         if (settingsFileUrl != existingSettingsFileUrl) {
             application.setSettingValue(settingsUrlKey, settingsFileUrl);
-            UIManager.evalNewScript(settingsFileUrl);
+            customizer.runSettingsFile(settingsFileUrl);
         }
     } else {
         application.removeSettingValue(settingsUrlKey);
@@ -38,6 +36,14 @@ document.getElementById('settings-dialog-save').onclick = function() {
             alert("Settings file changes would apply only after restart of the editor");
         }
     }
+}
+
+document.getElementById('settings-dialog-save').onclick = function() {
+    var overrideBrowserKeys;
+    overrideBrowserKeys = $('#overrideBrowserKeys').is(":checked");
+    modifyBrowserOverrides(overrideBrowserKeys);
+    applySettingsFile();
+    $(dialogSelector).modal('hide');
 };
 
 $(dialogSelector).on('shown', function() {

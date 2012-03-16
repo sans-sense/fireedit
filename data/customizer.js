@@ -13,7 +13,9 @@ define("fireedit/ext/customizer",
                    commandManager.addBrowserOverrides();
                    application.setSettingValue("added-browser-overrides",true);
                };
-               
+               this.runSettingsFile = function(contentUrl) {
+                   UIManager.evalNewScript(contentUrl, true)
+               };
            }).call(Customizer.prototype);
            
            exports.customizer = new Customizer();

@@ -3,8 +3,9 @@ define("fireedit/ui/ui_manager",
        function(require, exports, module) {
            var application = require('fireedit/core/application').application;
 
-           var doWithUrl = function(urlVal, callback) {
+           var doWithUrl = function(urlVal, callback, localpath) {
                if (application.localModeRun() || urlVal.match(/^file:/)) {
+                   // ignores the local path parameter as we can not do much with security restrictions
                    $.ajax({
                        url: urlVal,
                        success: function(data, textStatus, jqXhr){
@@ -14,7 +15,7 @@ define("fireedit/ui/ui_manager",
                        callback("problems retriving data from " + urlVal);
                    });
                } else {
-                   window.ffResourceManager.doWithUrl(urlVal, callback);
+                   window.ffResourceManager.doWithUrl(urlVal, callback, localpath);
                }
 
            };
@@ -51,7 +52,7 @@ define("fireedit/ui/ui_manager",
                openUrl: function(contentUrl, callback) {
                    doWithUrl(contentUrl, callback);
                },
-               evalNewScript: function(contentUrl) {
+               evalNewScript: function(contentUrl, localpath) {
                    doWithUrl(contentUrl, function(responseText) {
                        if (responseText && responseText.match(/^problems/)) {
                            // do nothing
@@ -63,7 +64,7 @@ define("fireedit/ui/ui_manager",
                                alert(e);
                            }
                        }
-                   });
+                   }, localpath);
                },
                getElement: function(elementSelector) {
                    return $(elementSelector);

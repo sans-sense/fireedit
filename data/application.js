@@ -1,13 +1,14 @@
 define("fireedit/core/application", 
        ["require", "exports", "module"],
        function(require, exports, module) {
-           var currentEditor;
-           var currentSettings = {};
 
            var Application = function() {
            };
 
            (function(){
+               var currentSettings = {};
+               var currentEditor;
+
                this.localModeRun = function() {
                    return document.location.toString().match(/^file:/);
                };

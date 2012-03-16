@@ -32,9 +32,14 @@
     // TODO change this to use the singleton style, execute should not escape
     var ResourceManager = {
         callbacks:  {},
-        doWithUrl: function(url, callback) {
+        doWithUrl: function(url, callback, localpath) {
             var unique_stamp = url + Date.now();
-            self.port.emit("getUrl", {"path": url, "callerId": unique_stamp});
+            var requestDescriptor = {"path": url, "callerId": unique_stamp};
+            if (localpath) {
+                self.port.emit("getLocalUrl", requestDescriptor);
+            } else {
+                self.port.emit("getUrl", requestDescriptor);
+            }
             ResourceManager.callbacks[unique_stamp] = callback;
         },
         execute: function(unique_stamp, urlContents) {
