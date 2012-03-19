@@ -4,29 +4,29 @@ var application = require('fireedit/core/application').application;
 var customizer = require('fireedit/ext/customizer').customizer;
 
 var dialogSelector = '#dynamic-display';
-var settingKey = "added-browser-overrides";
-var settingsUrlKey = 'settings-url';
+var browserOverridesKey = application.preferenceKeys.browserOverrides;
+var settingsUrlKey = application.preferenceKeys.settingsUrlKey;
 
 function modifyBrowserOverrides(add) {
-    var existingOverride = application.getSettingValue(settingKey) || false;
+    var existingOverride = application.getSettingValue(browserOverridesKey) || false;
     if (add != existingOverride) {
         if (add) {
             commandManager.addBrowserOverrides();
-            application.setSettingValue(settingKey, true);
+            application.setSettingValue(browserOverridesKey, true);
         } else {
             commandManager.removeBrowserOverrides();
-            application.removeSettingValue(settingKey);
+            application.removeSettingValue(browserOverridesKey);
         }
     }
 }
 
-function applySettingsFile() {
+function applySettingsFile(mustEval) {
     var settingsFileUrl, existingSettingsFileUrl;
 
     existingSettingsFileUrl = application.getSettingValue(settingsUrlKey);
     settingsFileUrl = $('#settings-file').attr('value');
     if (settingsFileUrl.length > 0) {
-        if (settingsFileUrl != existingSettingsFileUrl) {
+        if ((settingsFileUrl != existingSettingsFileUrl) || mustEval) {
             application.setSettingValue(settingsUrlKey, settingsFileUrl);
             customizer.runSettingsFile(settingsFileUrl);
         }
@@ -42,17 +42,23 @@ document.getElementById('settings-dialog-save').onclick = function() {
     var overrideBrowserKeys;
     overrideBrowserKeys = $('#overrideBrowserKeys').is(":checked");
     modifyBrowserOverrides(overrideBrowserKeys);
-    applySettingsFile();
+    applySettingsFile(false);
+    application.storeSettings();
+    $(dialogSelector).modal('hide');
+};
+
+document.getElementById('settings-dialog-apply').onclick = function() {
+    applySettingsFile(true);
     $(dialogSelector).modal('hide');
 };
 
 $(dialogSelector).on('shown', function() {
-    if (application.getSettingValue(settingKey)) {
+    if (application.getSettingValue(browserOverridesKey)) {
         // not using jquery as checked is better than attr or property
         document.getElementById('overrideBrowserKeys').checked = true;
     }
     if (application.getSettingValue(settingsUrlKey)) {
-        // not using jquery as checked is better than attr or property
-        document.getElementById('settings-file').value = application.getSettingValue(settingKey);
+        // not using jquery as value is better than attr or property
+        document.getElementById('settings-file').value = application.getSettingValue(settingsUrlKey);
     }
 });

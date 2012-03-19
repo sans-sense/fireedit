@@ -4,20 +4,7 @@ define("fireedit/ui/ui_manager",
            var application = require('fireedit/core/application').application;
 
            var doWithUrl = function(urlVal, callback, localpath) {
-               if (application.localModeRun() || urlVal.match(/^file:/)) {
-                   // ignores the local path parameter as we can not do much with security restrictions
-                   $.ajax({
-                       url: urlVal,
-                       success: function(data, textStatus, jqXhr){
-                           callback(jqXhr.responseText);
-                       }
-                   }).fail(function() {
-                       callback("problems retriving data from " + urlVal);
-                   });
-               } else {
-                   window.ffResourceManager.doWithUrl(urlVal, callback, localpath);
-               }
-
+               window.ffResourceManager.doWithUrl(urlVal, callback, localpath);
            };
 
            var setInnerContents = function(element, contentUrl, callback) {

@@ -1,13 +1,28 @@
 define("fireedit/core/application", 
-       ["require", "exports", "module"],
+       ["require", "exports", "module", "fireedit/core/localResourceManager"],
        function(require, exports, module) {
 
+           var getResourceManager = function() {
+               // content-script overrides the window variable
+               return window.ffResourceManager;
+           }
+
+
            var Application = function() {
+               var preferenceKeys = {};
+               preferenceKeys.settingsUrlKey = 'settings-url-key';
+               preferenceKeys.browserOverrides = 'added-browser-overrides'; 
+
+               this.preferenceKeys = preferenceKeys;
+               this.settingsCallbacks = [];
            };
 
+
+          window.ffResourceManager = require("fireedit/core/localResourceManager").localResourceManager;
+
            (function(){
-               var currentSettings = {};
                var currentEditor;
+               var self = this;
 
                this.localModeRun = function() {
                    return document.location.toString().match(/^file:/);
@@ -49,19 +64,34 @@ define("fireedit/core/application",
                };
 
                this.setSettingValue = function(key, value) {
-                   currentSettings[key] = value;
+                   getResourceManager().setSettingValue(key, value);
                };
 
                this.getSettingValue = function(key) {
-                   return currentSettings[key];
+                   return getResourceManager().getSettingValue(key);
                };
 
                this.removeSettingValue = function(key) {
-                   delete currentSettings[key];
+                   getResourceManager().removeSettingValue(key);
                };
-               
+               this.storeSettings = function() {
+                   getResourceManager().storePreferences();
+               };
+               this.observeSettings = function(settingsCallback) {
+                   getResourceManager().observeSettings(settingsCallback);
+                   this.settingsCallbacks.push(settingsCallback);
+               };
+               this.resourceManagerChanged = function() {
+                   var i, settingsCallback;
+                   for (i = 0; i < this.settingsCallbacks.length; i++) {
+                       settingsCallback = this.settingsCallbacks[i];
+                       getResourceManager().observeSettings(settingsCallback);
+                   }
+               };
            }).call(Application.prototype);
 
-           exports.application = new Application();
+           var currentApplication = new Application();
+           exports.application = currentApplication;
+           
        });
 

@@ -9,16 +9,32 @@ define("fireedit/ext/customizer",
            };
 
            (function(){
+               var self = this;
+               this.settingsChanged = function() {
+                   self.customize();
+               };
                this.customize = function() {
-                   commandManager.addBrowserOverrides();
-                   application.setSettingValue("added-browser-overrides",true);
+                   var browserOverrides = application.getSettingValue(application.preferenceKeys.browserOverridesKey), 
+                   settingsFile = application.getSettingValue(application.preferenceKeys.settingsUrlKey);
+
+                   if ( browserOverrides !== false) {
+                       commandManager.addBrowserOverrides();
+                   }
+                   if (settingsFile) {
+                       self.runSettingsFile(settingsFile);
+                   }
                };
                this.runSettingsFile = function(contentUrl) {
-                   UIManager.evalNewScript(contentUrl, true)
+                   UIManager.evalNewScript(contentUrl, true);
                };
+               this.setup = function() {
+                   application.observeSettings(self.settingsChanged);
+               }
            }).call(Customizer.prototype);
            
-           exports.customizer = new Customizer();
+           var customizer = new Customizer();
+           exports.customizer = customizer;
+          
        });
 
-require("fireedit/ext/customizer").customizer.customize();
+require("fireedit/ext/customizer").customizer.setup();

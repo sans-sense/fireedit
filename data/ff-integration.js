@@ -32,6 +32,9 @@
     // TODO change this to use the singleton style, execute should not escape
     var ResourceManager = {
         callbacks:  {},
+        preferences:{},
+        settingsCallbacks:[],
+
         doWithUrl: function(url, callback, localpath) {
             var unique_stamp = url + Date.now();
             var requestDescriptor = {"path": url, "callerId": unique_stamp};
@@ -48,13 +51,56 @@
                 callback(urlContents);
                 delete ResourceManager.callbacks[unique_stamp];
             }
-        }
+        },
+        initPreferences: function(preferenceKeys) {
+            self.port.emit("getAllPrefernces", {contents:preferenceKeys});
+        },
+        
+        storePreferences: function() {
+            self.port.emit("storeAllPreferences", {contents:ResourceManager.preferences});
+            ResourceManager.settingsChanged();
+        },
+        
+        setSettingValue : function(key, value) {
+            ResourceManager.preferences[key] = value;
+        },
+
+        getSettingValue : function(key) {
+            return ResourceManager.preferences[key];
+        },
+
+        removeSettingValue : function(key) {
+             ResourceManager.preferences[key] = null;
+        },
+        setupPreferences : function(preferenceData) {
+            ResourceManager.preferences = preferenceData;
+            ResourceManager.settingsChanged();
+        },
+        observeSettings : function(settingsCallback) {
+            ResourceManager.settingsCallbacks.push(settingsCallback);
+        },
+        settingsChanged : function() {
+            var settingsCallback, i;
+            for (i = 0; i < ResourceManager.settingsCallbacks.length; i++) {
+                settingsCallback = ResourceManager.settingsCallbacks[i];
+                settingsCallback();
+            }
+        },
+        isRemote: true
     };
 
     var processUrlContents = function(responseData) {
         ResourceManager.execute(responseData.callerId, responseData.contents);
     };
+
+    var processPreferences = function(responseData) {
+        ResourceManager.setupPreferences(responseData.contents);
+    };
+
     self.port.on("urlContents", processUrlContents);
+    self.port.on("allPreferences", processPreferences);
 
     unsafeWindow.ffResourceManager = ResourceManager;
+    ResourceManager.initPreferences(['settings-url-key', 'added-browser-overrides']);
+    unsafeWindow.require("fireedit/core/application").application.resourceManagerChanged();
 }());
