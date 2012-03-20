@@ -46,7 +46,7 @@ define("fireedit/core/localResourceManager",
                    settingsChanged();
                };
                this.observeSettings = function(settingsCallback) {
-                   settingsCallback.push(settingsCallback);
+                   settingsCallback();
                };
                
            }).call(LocalResourceManager.prototype);

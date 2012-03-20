@@ -5,7 +5,7 @@ define("fireedit/core/application",
            var getResourceManager = function() {
                // content-script overrides the window variable
                return window.ffResourceManager;
-           }
+           };
 
 
            var Application = function() {

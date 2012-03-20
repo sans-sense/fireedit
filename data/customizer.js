@@ -16,7 +16,7 @@ define("fireedit/ext/customizer",
                this.customize = function() {
                    var browserOverrides = application.getSettingValue(application.preferenceKeys.browserOverridesKey), 
                    settingsFile = application.getSettingValue(application.preferenceKeys.settingsUrlKey);
-
+                   
                    if ( browserOverrides !== false) {
                        commandManager.addBrowserOverrides();
                    }
