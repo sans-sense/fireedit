@@ -201,3 +201,6 @@
     background-position: 0 0;
 }
 
+li.highlighted {
+    text-decoration: underline;
+}

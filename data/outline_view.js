@@ -19,6 +19,7 @@ define("fireedit/view/outline_view",
             // set it up to listen to the mode
             this.jsMode.on("AST", this.handleAST);
             viewUI.addEventListener("click", this.handleNavigation, false);
+            application.registerView("outline_view", this);
         };
 
         (function () {
@@ -138,6 +139,17 @@ define("fireedit/view/outline_view",
                     editor.gotoLine(parseInt(lineNo) + 1);
                     editor.focus();
                 }
+            };
+            this.find = function(functionPattern) {
+                var pattern = new RegExp(functionPattern), functionName;
+                $("#outline-tree li").each(function(index, item ) {
+                    var functionName = $(item).text();
+                    if (functionName.match(pattern)) {
+                        $(item).addClass("expanded");
+                        $(item).addClass("highlighted");
+                        $(item).parents().show();
+                    }
+                });
             };
             var nodeToHtml = function (decoratedNode) {
                 var liHtml, i, generatedContent, fun = decoratedNode.originalFunction;

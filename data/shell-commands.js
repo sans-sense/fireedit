@@ -20,9 +20,16 @@ define("fireedit/shell-commands",
                }
            };
 
+           var find_function = {
+               name:"find",
+               fn: function(fname) {
+                   this.getView("outline_view").find(fname);
+               }
+           };
            /* register commands with the shell */
            var register = function() {
                shell.add(goto_function);
+               shell.add(find_function);
            };
 
            exports.commands = {

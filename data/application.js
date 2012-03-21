@@ -22,6 +22,7 @@ define("fireedit/core/application",
 
            (function(){
                var currentEditor;
+               var registeredViews = {};
                var self = this;
 
                this.localModeRun = function() {
@@ -87,6 +88,12 @@ define("fireedit/core/application",
                        settingsCallback = this.settingsCallbacks[i];
                        getResourceManager().observeSettings(settingsCallback);
                    }
+               };
+               this.registerView = function(name, implementation) {
+                   registeredViews[name] = implementation;
+               };
+               this.getView = function(name) {
+                   return registeredViews[name];
                };
            }).call(Application.prototype);
 
