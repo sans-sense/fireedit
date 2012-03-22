@@ -58,8 +58,8 @@ define('jquery.citrus', ['jquery'],
                 if (this.data('controller').length > 0) {
                     var controller = this.data('controller');
                     var tree = this;
-                    $(html).appendTo(controller).click(function(event){
-                        actionFunction.call(tree,event);
+                    $(html).appendTo(controller).click(function (event) {
+                        actionFunction.call(tree, event);
                     });
                 }
             },
@@ -88,8 +88,12 @@ define('jquery.citrus', ['jquery'],
                 return this;
 
             },
-            highlightNode:function (dataType, value) {
+            highlightNodeForData:function (dataType, value) {
                 var query = 'li[data-' + dataType + '="' + value + '"]';
+                this.citrus("highlightNode", query);
+            },
+            highlightNode:function (query) {
+                $('.highlight').removeClass("highlight");
                 var nodeToHighlight = this.find(query);
                 var collapsed = nodeToHighlight.parentsUntil(this, 'li.collapsed');
                 collapsed.each(function () {
@@ -98,7 +102,7 @@ define('jquery.citrus', ['jquery'],
                     node.removeClass('collapsed');
                     node.addClass('expanded');
                 });
-                nodeToHighlight.effect("highlight", {}, 'slow');
+                nodeToHighlight.addClass("highlight");
                 return this;
 
             }
@@ -113,5 +117,16 @@ define('jquery.citrus', ['jquery'],
                 $.error('Method ' + method + ' does not exist on jQuery.tooltip');
             }
         };
+
+        $.extend($.expr[':'], {
+            actuallyContains:function (elem, i, match, array) {
+                var filtered = $(elem).contents().filter(function(i){
+                    return (this.nodeType === 3 && this.textContent.indexOf(match[3]) >= 0)
+                });
+                return filtered.length > 0;
+            }
+        });
+
+
     })(jQuery)
 );

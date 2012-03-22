@@ -121,7 +121,7 @@ define("fireedit/view/outline_view",
                         function (event) {
                             //this here will be the tree
                             var tree = this;
-                            tree.citrus('highlightNode', 'lineno', getFunctionAtCursor());
+                            tree.citrus('highlightNodeForData', 'lineno', getFunctionAtCursor());
 
                         });
                     self.dirty = false;
@@ -141,15 +141,8 @@ define("fireedit/view/outline_view",
                 }
             };
             this.find = function(functionPattern) {
-                var pattern = new RegExp(functionPattern), functionName;
-                $("#outline-tree li").each(function(index, item ) {
-                    var functionName = $(item).text();
-                    if (functionName.match(pattern)) {
-                        $(item).addClass("expanded");
-                        $(item).addClass("highlighted");
-                        $(item).parents().show();
-                    }
-                });
+                var query = 'li:actuallyContains("'+functionPattern+'")';
+                $('#outline-tree').citrus('highlightNode', query);
             };
             var nodeToHtml = function (decoratedNode) {
                 var liHtml, i, generatedContent, fun = decoratedNode.originalFunction;

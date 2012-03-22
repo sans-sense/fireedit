@@ -53,3 +53,11 @@ ul.citrus li.expanded > span.expander{
 ul.citrus{
     padding-top: 12px;
 }
+
+ul.citrus li.highlight{
+    color: red;
+}
+
+ul.citrus li.highlight li, ul.citrus li.highlight ul{
+    color: #FAA732;
+}
