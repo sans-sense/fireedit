@@ -61,3 +61,7 @@ ul.citrus li.highlight{
 ul.citrus li.highlight li, ul.citrus li.highlight ul{
     color: #FAA732;
 }
+
+ul.citrus li.highlight ul li.highlight{
+    color: red;
+}
