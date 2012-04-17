@@ -3,13 +3,7 @@ $(function () {
     var application = require('fireedit/core/application').application;
 
     var layout = function () {
-        var fullHeight = $(document).height();
-        $('body').css({
-            height:fullHeight
-        });
-
-        $('.main-area > div').css("height", "-=60")
-
+        setupEditorHeight();
         //$('.main-area').css(hei)
 
         $('#nav-collapser').click(function () {
@@ -62,6 +56,16 @@ $(function () {
         var commandLineController = require("fireedit/command-line-controller").controller;
         commandLineView.bindTo($('#command-line'));
         commandLineController.bindTo(commandLineView);
+    }
+
+    var setupEditorHeight = function(){
+      var fullHeight = $(window).innerHeight();
+      $('body').css({
+        height: fullHeight
+      });
+
+      //TODO we need to remove the hard coded height buffer below.
+      $('.main-area > div').css("height", fullHeight-95);
     }
 
     // AN : Hack to make local mode a bit more functional
@@ -117,6 +121,10 @@ $(function () {
         }
     }, false);
 
+    /*Listen for the window resize and reset the editor height*/
+    window.addEventListener('resize', function(){
+      setupEditorHeight();
+    })
 
     layout();
 });

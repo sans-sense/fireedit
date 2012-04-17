@@ -1,3 +1,6 @@
+body{
+    overflow: hidden;
+}
 .navbar-fixed-top .brand {
     margin-left: 20px;
     float: right;
@@ -118,15 +121,6 @@
     border-radius: 0;
 }
 
-.tab-content{
-    height: 95%;
-}
-
-
-.tab-content > div{
-    height: 100%;
-}
-
 .modified-well .component .header-label {
     border: 1px solid grey;
     box-shadow: 0 1px 1px grey inset;
@@ -137,7 +131,7 @@
 }
 
 .tab-content{
-    height: 95%;
+    height: 100%;
 }
 
 
