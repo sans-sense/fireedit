@@ -18,7 +18,6 @@ define("fireedit/view/outline_view",
             viewUI = viewElement;
             // set it up to listen to the mode
             this.jsMode.on("AST", this.handleAST);
-            viewUI.addEventListener("click", this.handleNavigation, false);
             application.registerView("outline_view", this);
         };
 
@@ -106,32 +105,47 @@ define("fireedit/view/outline_view",
                 // exporting to global variable for ease of debugging
                 if (self.dirty) {
                     parsedResults = parsedAST;
-                    sortedFunctions = functionCombiner.reorganize(functionASTs)
-                    listHtml = '<div class="citrus-control" id="outline-tree-control">' +
-                        '</div>';
-                    listHtml += '<ul class="citrus" id="outline-tree">';
-                    for (i = 0; i < sortedFunctions.length; i++) {
-                        listHtml += nodeToHtml(sortedFunctions[i]);
-                    }
-                    listHtml += "</ul>";
-                    self.repaintView(listHtml);
-                    $('.citrus').citrus({'controller':'#outline-tree-control'});
-                    $('.citrus').citrus('addToControls',
-                        '<span class="icon-adjust icon-fx" title="select-node"></span>',
-                        function (event) {
-                            //this here will be the tree
-                            var tree = this;
-                            tree.citrus('highlightNodeForData', 'lineno', getFunctionAtCursor());
+                    sortedFunctions = functionCombiner.reorganize(functionASTs);
+                    if(!this._outlineTree){
+                        this._outlineTree = $("<div>");
+                        $(viewUI).html('');
+                        $(viewUI).append(this._outlineTree);
 
+                        var outlineTree = $(this._outlineTree);
+                        $(outlineTree).citrus({
+                            'data': sortedFunctions,
+                            'controllerId': 'outline-tree-control',
+                            'listId': 'outline-tree'
                         });
+
+                        var selectNode = $('<span>')
+                            .addClass('icon-adjust icon-fx')
+                            .attr('title', 'Select Node');
+
+                        outlineTree.citrus('addToControls', selectNode, function (event) {
+                            outlineTree.citrus('highlightNodeForData', 'lineno', getFunctionAtCursor());
+                            return false;
+                        }).bind('citrus_node_click', function(e, data){
+                            if(!data){
+                                return;
+                            }
+                            var lineNo = $(data.target).data("lineno");
+                            if(isNaN(lineNo)){
+                                return;
+                            }
+                            var editor = application.getCurrentEditor();
+                            if (lineNo) {
+                                editor.gotoLine(parseInt(lineNo) + 1);
+                                editor.focus();
+                            }
+                        });
+                    }else{
+                        $(this._outlineTree).citrus('refresh', sortedFunctions);
+                    }
                     self.dirty = false;
                 }
-                ;
             };
 
-            this.repaintView = function (listHtml) {
-                viewUI.innerHTML = listHtml;
-            };
             this.handleNavigation = function (clickEvent) {
                 var lineNo = $(clickEvent.target).data("lineno");
                 var editor = application.getCurrentEditor();
@@ -144,32 +158,12 @@ define("fireedit/view/outline_view",
                 var query = 'li:actuallyContains("'+functionPattern+'")';
                 $('#outline-tree').citrus('highlightNode', query);
             };
-            var nodeToHtml = function (decoratedNode) {
-                var liHtml, i, generatedContent, fun = decoratedNode.originalFunction;
-                var nodeChildren = decoratedNode.getChildren();
-                liHtml = "<li data-lineno='[0]'>[1][2]</li>";
-
-                if (nodeChildren.length > 0) {
-                    var childUL = "<ul>";
-                    for (i = 0; i < nodeChildren.length; i++) {
-                        childUL += nodeToHtml(nodeChildren[i]);
-                    }
-                    childUL += "</ul>";
-                    generatedContent = liHtml.format(fun.lineNo, fun.name, childUL);
-                } else {
-
-                    generatedContent = liHtml.format(fun.lineNo, fun.name, "");
-
-                }
-
-                return generatedContent;
-            };
         }).call(OutlineView.prototype);
         exports.View = OutlineView;
     });
 
 /**
- * Intenal Object used only for AST for the view
+ * Internal Object used only for AST for the view
  */
 define("fireedit/internal/function",
     ["require", "exports", "module"],
@@ -315,7 +309,6 @@ define("fireedit/internal/function_namer",
                                     break;
                                 } else {
                                     guessedName = getNameFromIdentifier(currentStmt);
-                                    ;
                                     break;
                                 }
                             }

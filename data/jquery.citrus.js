@@ -1,132 +1,163 @@
-define('jquery.citrus', ['jquery'],
-    (function ($) {
+(function ($, undefined) {
+    $.widget("ui.citrus", {
+        options: {
+            nodes: [],
+            controllerId: '__random_controller_id__',
+            listId: '__random_list_id__',
+            showTreeController: true
+        },
+        _EVENTS: {
+            ON_BEFORE_EXPAND: '_before_expand',
+            ON_EXPAND: '_expand',
+            ON_NODE_CLICK: '_node_click'
+        },
+        _create: function () {
+            this._initController();
+            this._initTree();
+        },
+        _initController: function(){
+            if(!this.options.showTreeController){
+                this.element.find('.citrus-control').remove();
+                return;
+            }
+            var controller = $('<div>').addClass("citrus-control").attr('id', this.options.controllerId);
+            this.element.append(controller);
+            this.controller = controller;
 
-        var methods = {
-            init:function (options) {
+            var citrus = this;
+            $('<span>')
+                .addClass('icon-resize-full icon-white expand-control')
+                .attr('title', 'Expand All')
+                .click(function (event) {
+                    citrus.expandAll();
+                    return false;
+                })
+                .appendTo(controller);
 
-                var treeRoot = this;
-                /*
-                 * Hide all the child tree elements
-                 */
-                var parentLi = treeRoot.find('li').has('ul');
-                parentLi.children("ul").hide();
-                parentLi.addClass('collapsed');
+            $('<span>')
+                .addClass('icon-resize-small icon-white collapse-control')
+                .attr('title', 'Collapse All')
+                .click(function (event) {
+                    citrus.collapseAll();
+                    return false;
+                })
+                .appendTo(controller);
+        },
+        _initTree: function () {
+            var options = this.options;
+            if(options.data){
+                this._buildTree();
+            }
+            return this;
+        },
+        addToControls:function (node, actionFunction) {
+            if (this.controller) {
+                var controller = this.controller;
+                var tree = this;
+                $(node).appendTo(controller).click(function (event) {
+                    actionFunction.call(tree, event);
+                    return false;
+                });
+            }
+        },
+        expandAll:function () {
+            $(this.element).find('.folder').removeClass('collapsed').addClass('expanded');
+        },
+        collapseAll:function () {
+            $(this.element).find('.folder').addClass('collapsed').removeClass('expanded');
+        },
+        expandLevel:function (level) {
+            $(this.element).find('.folder:eq('+level+')').removeClass('collapsed').addClass('expanded');
+        },
+        collapseLevel:function (level) {
+            $(this.element).find('.folder:eq('+level+')').addClass('collapsed').removeClass('expanded');
+        },
+        highlightNodeForData:function (dataType, value) {
+            var query = 'li[data-' + dataType + '="' + value + '"]';
+            this.citrus("highlightNode", query);
+        },
+        highlightNode:function (query) {
+            $('.highlight').removeClass("highlight");
+            var nodeToHighlight = this.find(query);
+            var collapsed = nodeToHighlight.parentsUntil(this, 'li.collapsed');
+            collapsed.each(function () {
+                var node = $(this);
+                node.children('ul').show();
+                node.removeClass('collapsed');
+                node.addClass('expanded');
+            });
+            nodeToHighlight.addClass("highlight");
+            return this;
+        },
+        refresh: function(data){
+            this.options.data = data;
+            this._buildTree();
+        },
+        _buildTree: function(){
+            if(this.list){
+                this.list.html('');
+            }else{
+                list = $('<ul>').addClass('citrus').attr('id', 'outline-tree');
+            }
+            for (var i = 0; i < sortedFunctions.length; i++) {
+                list.append(this._nodeToUI(sortedFunctions[i]));
+            }
 
-                /*
-                 * Add a span for expander
-                 */
-                parentLi.prepend('<span class="expander"></span>');
+            this.list = list;
+            this.element.append(list)
+        },
+        _nodeToUI: function (decoratedNode) {
+            var fun = decoratedNode.originalFunction;
+            var nodeChildren = decoratedNode.getChildren();
+            var base = this;
 
+            var li = $("<li>");
+            li.append($("<span>").text(fun.name).addClass('nodeText').click(function(event){
+                base._trigger(base._EVENTS.ON_NODE_CLICK, event, {
+                    target: li
+                });
+                $(this).fadeTo('fast', 0.5).fadeTo('slow', 1.0);
+            }));
 
-                /*
-                 * Add expand child tree listener
-                 */
-                parentLi.children('span.expander').click(function (event) {
-                    $(this).parent("li").children('ul').toggle();
+            if (nodeChildren.length > 0) {
+                li.addClass('collapsed folder');
+
+                var expander = $('<span>').addClass('expander');
+                li.prepend(expander);
+
+                expander.click(function (event) {
+                    var passThrough = base._trigger(base._EVENTS.ON_BEFORE_EXPAND, event, {
+                        target: li
+                    });
+                    if(passThrough == false){
+                        return;
+                    }
+
                     $(this).parent("li").toggleClass('collapsed expanded');
+
+                    base._trigger(base._EVENTS.ON_EXPAND, event, {
+                        target: li
+                    });
+
                     event.stopPropagation();
                 });
 
-                if (options.controller) {
+                var childUL = $("<ul>");
+                li.append(childUL);
 
-                    this.data('controller', options.controller);
-
-                    var controller = $(options.controller);
-
-                    if (controller.children(".expand-control").length == 0) {
-                        $('<span class="icon-resize-full icon-white expand-control" title="expand all"></span>').appendTo(controller);
-                    }
-
-                    controller.children(".expand-control").click(function (event) {
-                        treeRoot.citrus("expandAll");
-                        event.stopPropagation();
-                    });
-
-                    if (controller.children(".collapse-control").length == 0) {
-                        $('<span class="icon-resize-small icon-white collapse-control" title="collapse all"></span>').appendTo(controller);
-                    }
-
-                    controller.children(".collapse-control").click(function (event) {
-                        treeRoot.citrus("collapseAll");
-                        event.stopPropagation();
-                    });
+                for (var i = 0; i < nodeChildren.length; i++) {
+                    var deepNode = this._nodeToUI(nodeChildren[i]);
+                    childUL.append(deepNode);
                 }
-
-                return this;
-            },
-            addToControls:function (html, actionFunction) {
-                if (this.data('controller').length > 0) {
-                    var controller = this.data('controller');
-                    var tree = this;
-                    $(html).appendTo(controller).click(function (event) {
-                        actionFunction.call(tree, event);
-                    });
-                }
-            },
-            expandAll:function () {
-                var collapsed = this.find('li.collapsed');
-                collapsed.each(function () {
-                    var node = $(this);
-                    node.children('ul').show();
-                    node.removeClass('collapsed');
-                    node.addClass('expanded');
-                });
-                return this;
-            },
-            collapseAll:function () {
-                var expanded = this.find('li.expanded');
-                expanded.each(function () {
-                    var node = $(this);
-                    node.children('ul').hide();
-                    node.removeClass('expanded');
-                    node.addClass('collapsed');
-                });
-                return this;
-            },
-            expandLevel:function (level) {
-                //TODO: Implement exand to level
-                return this;
-
-            },
-            highlightNodeForData:function (dataType, value) {
-                var query = 'li[data-' + dataType + '="' + value + '"]';
-                this.citrus("highlightNode", query);
-            },
-            highlightNode:function (query) {
-                $('.highlight').removeClass("highlight");
-                var nodeToHighlight = this.find(query);
-                var collapsed = nodeToHighlight.parentsUntil(this, 'li.collapsed');
-                collapsed.each(function () {
-                    var node = $(this);
-                    node.children('ul').show();
-                    node.removeClass('collapsed');
-                    node.addClass('expanded');
-                });
-                nodeToHighlight.addClass("highlight");
-                return this;
-
+            }else{
+                li.prepend($('<span>').addClass('leaf-node-icon'));
+                li.addClass('leaf-node');
             }
-        };
 
-        $.fn.citrus = function (method) {
-            if (methods[method]) {
-                return methods[ method ].apply(this, Array.prototype.slice.call(arguments, 1));
-            } else if (typeof method === 'object' || !method) {
-                return methods.init.apply(this, arguments);
-            } else {
-                $.error('Method ' + method + ' does not exist on jQuery.tooltip');
-            }
-        };
+            li.attr('data-lineno', fun.lineNo);
 
-        $.extend($.expr[':'], {
-            actuallyContains:function (elem, i, match, array) {
-                var filtered = $(elem).contents().filter(function(i){
-                    return (this.nodeType === 3 && this.textContent.indexOf(match[3]) >= 0)
-                });
-                return filtered.length > 0;
-            }
-        });
+            return li;
+        }
+    });
 
-
-    })(jQuery)
-);
+})(jQuery);
