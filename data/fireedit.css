@@ -198,3 +198,7 @@ body{
 li.highlighted {
     text-decoration: underline;
 }
+
+.tab-content #function_tree{
+    margin-left: -10px;
+}

@@ -1,6 +1,5 @@
 ul.citrus, ul.citrus ul {
     list-style-type: none;
-    background: url('../img/vline_white.png')  transparent repeat-y;
     margin: 0;
     padding: 0;
 }
@@ -15,59 +14,53 @@ ul.citrus ul {
 
 ul.citrus li {
     margin: 0;
-    padding: 0 10px 0 22px;
+    padding: 0 10px 0 5px;
     line-height: 20px;
-    background: url('../img/node_white.png') transparent no-repeat;
-}
-
-ul.citrus li.leaf-node {
-    color: #FCCB86;
-}
-
-ul.citrus li:last-child {
-    background: url('../img/lastnode_white.png') #111 no-repeat;
-}
-
-ul.citrus li.leaf-node span.leaf-node-icon{
-    height: 3px;
-    width: 3px;
-    border-radius: 3px;
-    position: relative;
-    top: -2px;
-
-    margin-left: -15px;
-    margin-right: 6px;
-    padding: 4px 2px 0 0;
-
-    background: #fff;
-    display: inline-block;
+    width: 100%;
 }
 
 ul.citrus li span.nodeText{
-    -moz-transition-property: color;
-    -moz-transition-duration: 1s;
+    -moz-transition-property: color,text-shadow;
+    -moz-transition-duration: .5s;
     cursor: pointer;
 }
 
+ul.citrus li .nodeText.selected{
+    border-radius: 5px;
+    border: 1px dotted;
+}
+
 ul.citrus li .nodeText:hover{
-    color: #FFE100;
+    text-shadow: 0px 0px 5px rgba(255, 255, 255, .8);
 }
 
 ul.citrus li span.expander{
     display: inline-block;
     height: 10px;
-    margin-left: -15px;
-    margin-top: 2px;
-    padding: 4px 2px 0 0;
     width: 10px;
+    padding: 4px 5px 0 0;
     cursor: pointer;
 }
+ul.citrus li.leaf-node{
+    display: inline-block;
+    font-style: italic;
+}
 
-ul.citrus li.collapsed > span.expander{
+ul.citrus li.folder > ul{
+    padding-left: 20px;
+}
+
+ul.citrus li.folder > .node-title-wrapper{
+    font-weight: bold;
+    display: inline-block;
+    width: 100%;
+}
+
+ul.citrus li.collapsed > .node-title-wrapper > span.expander{
     background: url("../img/expand_white.gif") transparent no-repeat left center;
 }
 
-ul.citrus li.expanded > span.expander{
+ul.citrus li.expanded > .node-title-wrapper > span.expander{
     background: url("../img/collapse_white.gif") transparent no-repeat left bottom;
 }
 
@@ -90,7 +83,7 @@ ul.citrus li.expanded > ul{
 
 .citrus-control span{
     background-origin: content-box;
-    border: 1px solid #a47e3c;
+    border: 1px solid;
     cursor: pointer;
     padding: 1px 2px 1px 2px;
 }

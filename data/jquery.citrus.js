@@ -12,6 +12,7 @@
             ON_NODE_CLICK: '_node_click'
         },
         _create: function () {
+            this.element.addClass('ui-widget');
             this._initController();
             this._initTree();
         },
@@ -20,7 +21,7 @@
                 this.element.find('.citrus-control').remove();
                 return;
             }
-            var controller = $('<div>').addClass("citrus-control").attr('id', this.options.controllerId);
+            var controller = $('<div>').addClass("citrus-control ui-widget-header").attr('id', this.options.controllerId);
             this.element.append(controller);
             this.controller = controller;
 
@@ -86,7 +87,7 @@
                 node.removeClass('collapsed');
                 node.addClass('expanded');
             });
-            nodeToHighlight.addClass("highlight");
+            nodeToHighlight.addClass("  highlight");
             return this;
         },
         refresh: function(data){
@@ -97,7 +98,7 @@
             if(this.list){
                 this.list.html('');
             }else{
-                list = $('<ul>').addClass('citrus').attr('id', 'outline-tree');
+                list = $('<ul>').addClass('citrus ui-widget-content').attr('id', 'outline-tree');
             }
             for (var i = 0; i < sortedFunctions.length; i++) {
                 list.append(this._nodeToUI(sortedFunctions[i]));
@@ -112,18 +113,20 @@
             var base = this;
 
             var li = $("<li>");
-            li.append($("<span>").text(fun.name).addClass('nodeText').click(function(event){
+            var nodeText = $("<span>").text(fun.name).addClass('nodeText').click(function(event){
                 base._trigger(base._EVENTS.ON_NODE_CLICK, event, {
                     target: li
                 });
-                $(this).fadeTo('fast', 0.5).fadeTo('slow', 1.0);
-            }));
+                $(this).fadeTo('fast', 0.8).fadeTo('slow', 1.0);
+            });
 
             if (nodeChildren.length > 0) {
                 li.addClass('collapsed folder');
+                var wrapper = $("<span>").addClass('node-title-wrapper ui-state-active');
 
                 var expander = $('<span>').addClass('expander');
-                li.prepend(expander);
+                wrapper.append(expander, nodeText);
+                li.append(wrapper);
 
                 expander.click(function (event) {
                     var passThrough = base._trigger(base._EVENTS.ON_BEFORE_EXPAND, event, {
@@ -133,7 +136,7 @@
                         return;
                     }
 
-                    $(this).parent("li").toggleClass('collapsed expanded');
+                    $(this).closest("li.folder").toggleClass('collapsed expanded');
 
                     base._trigger(base._EVENTS.ON_EXPAND, event, {
                         target: li
@@ -150,8 +153,7 @@
                     childUL.append(deepNode);
                 }
             }else{
-                li.prepend($('<span>').addClass('leaf-node-icon'));
-                li.addClass('leaf-node');
+                li.append(nodeText).addClass('leaf-node');
             }
 
             li.attr('data-lineno', fun.lineNo);

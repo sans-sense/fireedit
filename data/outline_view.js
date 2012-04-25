@@ -107,7 +107,7 @@ define("fireedit/view/outline_view",
                     parsedResults = parsedAST;
                     sortedFunctions = functionCombiner.reorganize(functionASTs);
                     if(!this._outlineTree){
-                        this._outlineTree = $("<div>");
+                        this._outlineTree = $("<div>").attr('id', 'function_tree');
                         $(viewUI).html('');
                         $(viewUI).append(this._outlineTree);
 
