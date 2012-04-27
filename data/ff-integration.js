@@ -1,8 +1,21 @@
 (function() {
+    var history = undefined;
+    var initHistory = function(){
+        history = unsafeWindow.require('fireedit/history/file_open_history');
+        history.bind(function(path){
+            if(!path.length){
+                document.defaultView.location.reload()
+            }else{
+                self.port.emit("openFile", path);
+            }
+        });
+    };
+
     var processFileContents = function(fileMessage) {
         document.getElementById('ff-int-path').value = fileMessage.path;
         document.getElementById('ff-int-field').value = fileMessage.contents;
         document.defaultView.postMessage("readNew", "*");
+        history.pushFileToHistory(fileMessage.path);
     };
 
     var openFileElement = document.getElementById('openFile');
@@ -103,4 +116,6 @@
     unsafeWindow.ffResourceManager = ResourceManager;
     ResourceManager.initPreferences(['settings-url-key', 'added-browser-overrides']);
     unsafeWindow.require("fireedit/core/application").application.resourceManagerChanged();
+
+    initHistory();
 }());

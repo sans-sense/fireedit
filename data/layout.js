@@ -2,6 +2,20 @@ $(function () {
 
     var application = require('fireedit/core/application').application;
 
+    var history = null;
+    var initHistory = function(){
+        if(application.localModeRun()){
+            history = require('fireedit/history/file_open_history');
+            history.bind(function(path){
+                if(!path.length){
+                    document.defaultView.location.reload()
+                }else{
+                    loadURL(path);
+                }
+            });
+        }
+    };
+
     var layout = function () {
         setupEditorHeight();
         //$('.main-area').css(hei)
@@ -31,6 +45,7 @@ $(function () {
         });
 
         setupEditor();
+        initHistory();
     }
 
     var setupEditor = function () {
@@ -77,11 +92,16 @@ $(function () {
         $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
             if (urlVal && urlVal.length > 0) {
-                require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
-                    application.setCurrentEditorUrl(urlVal);
-                    application.setCurrentEditorContent(responseText);
-                });
+                history.pushFileToHistory(urlVal)
+                loadURL(urlVal);
             }
+        });
+    }
+
+    var loadURL = function(urlVal){
+        require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
+            application.setCurrentEditorUrl(urlVal);
+            application.setCurrentEditorContent(responseText);
         });
     }
     // AN: end of hack
