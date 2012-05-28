@@ -46,10 +46,13 @@
 var global = (function() {
     return this;
 })();
-
-if (typeof requirejs !== "undefined")
+    
+// if we find an existing require function use it.
+if (global.require && global.define) {
+    require.packaged = true;
     return;
-
+}
+    
 var _define = function(module, deps, payload) {
     if (typeof module !== 'string') {
         if (_define.original)
@@ -107,13 +110,12 @@ var _require = function(module, callback) {
             return _require.original.apply(window, arguments);
     }
 };
-_require.packaged = true;
 
 if (global.require)
     _require.original = global.require;
     
 global.require = _require;
-
+require.packaged = true;
 
 /**
  * Internal function to lookup moduleNames and resolve them by calling the
@@ -122,6 +124,7 @@ global.require = _require;
 var lookup = function(moduleName) {
     var module = define.modules[moduleName];
     if (module == null) {
+        console.error('Missing module: ' + moduleName);
         return null;
     }
 
@@ -148,151 +151,25 @@ var lookup = function(moduleName) {
     MIT License. http://github.com/280north/narwhal/blob/master/README.md
 */
 
-define('pilot/fixoldbrowsers', ['require', 'exports', 'module' , 'pilot/regexp', 'pilot/es5-shim'], function(require, exports, module) {
-
-require("pilot/regexp");
-require("pilot/es5-shim");
-
-});define('pilot/regexp', ['require', 'exports', 'module' ], function(require, exports, module) {
-
-// Based on code from:
-//
-// XRegExp 1.5.0
-// (c) 2007-2010 Steven Levithan
-// MIT License
-// <http://xregexp.com>
-// Provides an augmented, extensible, cross-browser implementation of regular expressions,
-// including support for additional syntax, flags, and methods
-
-    //---------------------------------
-    //  Private variables
-    //---------------------------------
-
-    var real = {
-            exec: RegExp.prototype.exec,
-            test: RegExp.prototype.test,
-            match: String.prototype.match,
-            replace: String.prototype.replace,
-            split: String.prototype.split
-        },
-        compliantExecNpcg = real.exec.call(/()??/, "")[1] === undefined, // check `exec` handling of nonparticipating capturing groups
-        compliantLastIndexIncrement = function () {
-            var x = /^/g;
-            real.test.call(x, "");
-            return !x.lastIndex;
-        }();
-
-    //---------------------------------
-    //  Overriden native methods
-    //---------------------------------
-
-    // Adds named capture support (with backreferences returned as `result.name`), and fixes two
-    // cross-browser issues per ES3:
-    // - Captured values for nonparticipating capturing groups should be returned as `undefined`,
-    //   rather than the empty string.
-    // - `lastIndex` should not be incremented after zero-length matches.
-    RegExp.prototype.exec = function (str) {
-        var match = real.exec.apply(this, arguments),
-            name, r2;
-        if (match) {
-            // Fix browsers whose `exec` methods don't consistently return `undefined` for
-            // nonparticipating capturing groups
-            if (!compliantExecNpcg && match.length > 1 && indexOf(match, "") > -1) {
-                r2 = RegExp(this.source, real.replace.call(getNativeFlags(this), "g", ""));
-                // Using `str.slice(match.index)` rather than `match[0]` in case lookahead allowed
-                // matching due to characters outside the match
-                real.replace.call(str.slice(match.index), r2, function () {
-                    for (var i = 1; i < arguments.length - 2; i++) {
-                        if (arguments[i] === undefined)
-                            match[i] = undefined;
-                    }
-                });
-            }
-            // Attach named capture properties
-            if (this._xregexp && this._xregexp.captureNames) {
-                for (var i = 1; i < match.length; i++) {
-                    name = this._xregexp.captureNames[i - 1];
-                    if (name)
-                       match[name] = match[i];
-                }
-            }
-            // Fix browsers that increment `lastIndex` after zero-length matches
-            if (!compliantLastIndexIncrement && this.global && !match[0].length && (this.lastIndex > match.index))
-                this.lastIndex--;
-        }
-        return match;
-    };
-
-    // Don't override `test` if it won't change anything
-    if (!compliantLastIndexIncrement) {
-        // Fix browser bug in native method
-        RegExp.prototype.test = function (str) {
-            // Use the native `exec` to skip some processing overhead, even though the overriden
-            // `exec` would take care of the `lastIndex` fix
-            var match = real.exec.call(this, str);
-            // Fix browsers that increment `lastIndex` after zero-length matches
-            if (match && this.global && !match[0].length && (this.lastIndex > match.index))
-                this.lastIndex--;
-            return !!match;
-        };
-    }
-
-    //---------------------------------
-    //  Private helper functions
-    //---------------------------------
-
-    function getNativeFlags (regex) {
-        return (regex.global     ? "g" : "") +
-               (regex.ignoreCase ? "i" : "") +
-               (regex.multiline  ? "m" : "") +
-               (regex.extended   ? "x" : "") + // Proposed for ES4; included in AS3
-               (regex.sticky     ? "y" : "");
-    };
-
-    function indexOf (array, item, from) {
-        if (Array.prototype.indexOf) // Use the native array method if available
-            return array.indexOf(item, from);
-        for (var i = from || 0; i < array.length; i++) {
-            if (array[i] === item)
-                return i;
-        }
-        return -1;
-    };
-
-});// vim: ts=4 sts=4 sw=4 expandtab
-// -- kriskowal Kris Kowal Copyright (C) 2009-2011 MIT License
-// -- tlrobinson Tom Robinson Copyright (C) 2009-2010 MIT License (Narwhal Project)
-// -- dantman Daniel Friesen Copyright (C) 2010 XXX TODO License or CLA
-// -- fschaefer Florian Schäfer Copyright (C) 2010 MIT License
-// -- Gozala Irakli Gozalishvili Copyright (C) 2010 MIT License
-// -- kitcambridge Kit Cambridge Copyright (C) 2011 MIT License
-// -- kossnocorp Sasha Koss XXX TODO License or CLA
-// -- bryanforbes Bryan Forbes XXX TODO License or CLA
-// -- killdream Quildreen Motta Copyright (C) 2011 MIT Licence
-// -- michaelficarra Michael Ficarra Copyright (C) 2011 3-clause BSD License
-// -- sharkbrainguy Gerard Paapu Copyright (C) 2011 MIT License
-// -- bbqsrc Brendan Molloy (C) 2011 Creative Commons Zero (public domain)
-// -- iwyg XXX TODO License or CLA
-// -- DomenicDenicola Domenic Denicola Copyright (C) 2011 MIT License
-// -- xavierm02 Montillet Xavier XXX TODO License or CLA
-// -- Raynos Raynos XXX TODO License or CLA
-// -- samsonjs Sami Samhuri Copyright (C) 2010 MIT License
-// -- rwldrn Rick Waldron Copyright (C) 2011 MIT License
-// -- lexer Alexey Zakharov XXX TODO License or CLA
-
-/*!
-    Copyright (c) 2009, 280 North Inc. http://280north.com/
-    MIT License. http://github.com/280north/narwhal/blob/master/README.md
-*/
-
-define('pilot/es5-shim', ['require', 'exports', 'module' ], function(require, exports, module) {
+define('pilot/fixoldbrowsers', ['require', 'exports', 'module' ], function(require, exports, module) {
 
 /**
  * Brings an environment as close to ECMAScript 5 compliance
  * as is possible with the facilities of erstwhile engines.
  *
- * Annotated ES5: http://es5.github.com/ (specific links below)
- * ES5 Spec: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf
+ * ES5 Draft
+ * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf
+ *
+ * NOTE: this is a draft, and as such, the URL is subject to change.  If the
+ * link is broken, check in the parent directory for the latest TC39 PDF.
+ * http://www.ecma-international.org/publications/files/drafts/
+ *
+ * Previous ES5 Draft
+ * http://www.ecma-international.org/publications/files/drafts/tc39-2009-025.pdf
+ * This is a broken link to the previous draft of ES5 on which most of the
+ * numbered specification references and quotes herein were taken.  Updating
+ * these references and quotes to reflect the new document would be a welcome
+ * volunteer project.
  *
  * @module
  */
@@ -305,35 +182,39 @@ define('pilot/es5-shim', ['require', 'exports', 'module' ], function(require, ex
 //
 
 // ES-5 15.3.4.5
-// http://es5.github.com/#x15.3.4.5
+// http://www.ecma-international.org/publications/files/drafts/tc39-2009-025.pdf
 
 if (!Function.prototype.bind) {
+    var slice = Array.prototype.slice;
     Function.prototype.bind = function bind(that) { // .length is 1
         // 1. Let Target be the this value.
         var target = this;
         // 2. If IsCallable(Target) is false, throw a TypeError exception.
-        if (typeof target != "function")
-            throw new TypeError(); // TODO message
+        // XXX this gets pretty close, for all intents and purposes, letting
+        // some duck-types slide
+        if (typeof target.apply !== "function" || typeof target.call !== "function")
+            return new TypeError();
         // 3. Let A be a new (possibly empty) internal list of all of the
         //   argument values provided after thisArg (arg1, arg2 etc), in order.
-        // XXX slicedArgs will stand in for "A" if used
-        var args = slice.call(arguments, 1); // for normal call
+        var args = slice.call(arguments);
         // 4. Let F be a new native ECMAScript object.
-        // 11. Set the [[Prototype]] internal property of F to the standard
+        // 9. Set the [[Prototype]] internal property of F to the standard
         //   built-in Function prototype object as specified in 15.3.3.1.
-        // 12. Set the [[Call]] internal property of F as described in
+        // 10. Set the [[Call]] internal property of F as described in
         //   15.3.4.5.1.
-        // 13. Set the [[Construct]] internal property of F as described in
+        // 11. Set the [[Construct]] internal property of F as described in
         //   15.3.4.5.2.
-        // 14. Set the [[HasInstance]] internal property of F as described in
+        // 12. Set the [[HasInstance]] internal property of F as described in
         //   15.3.4.5.3.
-        var bound = function () {
+        // 13. The [[Scope]] internal property of F is unused and need not
+        //   exist.
+        var bound = function bound() {
 
             if (this instanceof bound) {
                 // 15.3.4.5.2 [[Construct]]
                 // When the [[Construct]] internal method of a function object,
                 // F that was created using the bind function is called with a
-                // list of arguments ExtraArgs, the following steps are taken:
+                // list of arguments ExtraArgs the following steps are taken:
                 // 1. Let target be the value of F's [[TargetFunction]]
                 //   internal property.
                 // 2. If target has no [[Construct]] internal method, a
@@ -343,26 +224,16 @@ if (!Function.prototype.bind) {
                 // 4. Let args be a new list containing the same values as the
                 //   list boundArgs in the same order followed by the same
                 //   values as the list ExtraArgs in the same order.
-                // 5. Return the result of calling the [[Construct]] internal 
-                //   method of target providing args as the arguments.
 
-                var F = function(){};
-                F.prototype = target.prototype;
-                var self = new F;
-
-                var result = target.apply(
-                    self,
-                    args.concat(slice.call(arguments))
-                );
-                if (result !== null && Object(result) === result)
-                    return result;
+                var self = Object.create(target.prototype);
+                target.apply(self, args.concat(slice.call(arguments)));
                 return self;
 
             } else {
                 // 15.3.4.5.1 [[Call]]
                 // When the [[Call]] internal method of a function object, F,
                 // which was created using the bind function is called with a
-                // this value and a list of arguments ExtraArgs, the following
+                // this value and a list of arguments ExtraArgs the following
                 // steps are taken:
                 // 1. Let boundArgs be the value of F's [[BoundArgs]] internal
                 //   property.
@@ -370,53 +241,49 @@ if (!Function.prototype.bind) {
                 //   property.
                 // 3. Let target be the value of F's [[TargetFunction]] internal
                 //   property.
-                // 4. Let args be a new list containing the same values as the 
-                //   list boundArgs in the same order followed by the same 
-                //   values as the list ExtraArgs in the same order.
-                // 5. Return the result of calling the [[Call]] internal method 
-                //   of target providing boundThis as the this value and 
-                //   providing args as the arguments.
+                // 4. Let args be a new list containing the same values as the list
+                //   boundArgs in the same order followed by the same values as
+                //   the list ExtraArgs in the same order. 5.  Return the
+                //   result of calling the [[Call]] internal method of target
+                //   providing boundThis as the this value and providing args
+                //   as the arguments.
 
                 // equiv: target.call(this, ...boundArgs, ...args)
-                return target.apply(
-                    that,
+                return target.call.apply(
+                    target,
                     args.concat(slice.call(arguments))
                 );
 
             }
 
         };
-        // XXX bound.length is never writable, so don't even try
-        //
-        // 15. If the [[Class]] internal property of Target is "Function", then
-        //     a. Let L be the length property of Target minus the length of A.
-        //     b. Set the length own property of F to either 0 or L, whichever is 
-        //       larger.
-        // 16. Else set the length own property of F to 0.
-        // 17. Set the attributes of the length own property of F to the values
-        //   specified in 15.3.5.1.
-
+        bound.length = (
+            // 14. If the [[Class]] internal property of Target is "Function", then
+            typeof target === "function" ?
+            // a. Let L be the length property of Target minus the length of A.
+            // b. Set the length own property of F to either 0 or L, whichever is larger.
+            Math.max(target.length - args.length, 0) :
+            // 15. Else set the length own property of F to 0.
+            0
+        )
+        // 16. The length own property of F is given attributes as specified in
+        //   15.3.5.1.
         // TODO
-        // 18. Set the [[Extensible]] internal property of F to true.
-        
+        // 17. Set the [[Extensible]] internal property of F to true.
         // TODO
-        // 19. Let thrower be the [[ThrowTypeError]] function Object (13.2.3).
-        // 20. Call the [[DefineOwnProperty]] internal method of F with 
-        //   arguments "caller", PropertyDescriptor {[[Get]]: thrower, [[Set]]:
-        //   thrower, [[Enumerable]]: false, [[Configurable]]: false}, and 
-        //   false.
-        // 21. Call the [[DefineOwnProperty]] internal method of F with 
-        //   arguments "arguments", PropertyDescriptor {[[Get]]: thrower, 
-        //   [[Set]]: thrower, [[Enumerable]]: false, [[Configurable]]: false},
-        //   and false.
-
+        // 18. Call the [[DefineOwnProperty]] internal method of F with
+        //   arguments "caller", PropertyDescriptor {[[Value]]: null,
+        //   [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]:
+        //   false}, and false.
         // TODO
-        // NOTE Function objects created using Function.prototype.bind do not 
-        // have a prototype property or the [[Code]], [[FormalParameters]], and
-        // [[Scope]] internal properties.
-        // XXX can't delete prototype in pure-js.
-
-        // 22. Return F.
+        // 19. Call the [[DefineOwnProperty]] internal method of F with
+        //   arguments "arguments", PropertyDescriptor {[[Value]]: null,
+        //   [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]:
+        //   false}, and false.
+        // TODO
+        // NOTE Function objects created using Function.prototype.bind do not
+        // have a prototype property.
+        // XXX can't delete it in pure-js.
         return bound;
     };
 }
@@ -428,22 +295,17 @@ if (!Function.prototype.bind) {
 var call = Function.prototype.call;
 var prototypeOfArray = Array.prototype;
 var prototypeOfObject = Object.prototype;
-var slice = prototypeOfArray.slice;
-var toString = call.bind(prototypeOfObject.toString);
 var owns = call.bind(prototypeOfObject.hasOwnProperty);
 
+var defineGetter, defineSetter, lookupGetter, lookupSetter, supportsAccessors;
 // If JS engine supports accessors creating shortcuts.
-var defineGetter;
-var defineSetter;
-var lookupGetter;
-var lookupSetter;
-var supportsAccessors;
-if ((supportsAccessors = owns(prototypeOfObject, "__defineGetter__"))) {
+if ((supportsAccessors = owns(prototypeOfObject, '__defineGetter__'))) {
     defineGetter = call.bind(prototypeOfObject.__defineGetter__);
     defineSetter = call.bind(prototypeOfObject.__defineSetter__);
     lookupGetter = call.bind(prototypeOfObject.__lookupGetter__);
     lookupSetter = call.bind(prototypeOfObject.__lookupSetter__);
 }
+
 
 //
 // Array
@@ -451,270 +313,186 @@ if ((supportsAccessors = owns(prototypeOfObject, "__defineGetter__"))) {
 //
 
 // ES5 15.4.3.2
-// http://es5.github.com/#x15.4.3.2
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
     Array.isArray = function isArray(obj) {
-        return toString(obj) == "[object Array]";
+        return Object.prototype.toString.call(obj) === "[object Array]";
     };
 }
 
-// The IsCallable() check in the Array functions
-// has been replaced with a strict check on the
-// internal class of the object to trap cases where
-// the provided function was actually a regular
-// expression literal, which in V8 and
-// JavaScriptCore is a typeof "function".  Only in
-// V8 are regular expression literals permitted as
-// reduce parameters, so it is desirable in the
-// general case for the shim to match the more
-// strict and common behavior of rejecting regular
-// expressions.
-
 // ES5 15.4.4.18
-// http://es5.github.com/#x15.4.4.18
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/array/forEach
 if (!Array.prototype.forEach) {
-    Array.prototype.forEach = function forEach(fun /*, thisp*/) {
-        var self = toObject(this),
-            thisp = arguments[1],
-            i = 0,
-            length = self.length >>> 0;
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
-
-        while (i < length) {
-            if (i in self) {
-                // Invoke the callback function with call, passing arguments:
-                // context, property value, property key, thisArg object context
-                fun.call(thisp, self[i], i, self);
+    Array.prototype.forEach =  function forEach(block, thisObject) {
+        var len = +this.length;
+        for (var i = 0; i < len; i++) {
+            if (i in this) {
+                block.call(thisObject, this[i], i, this);
             }
-            i++;
         }
     };
 }
 
 // ES5 15.4.4.19
-// http://es5.github.com/#x15.4.4.19
 // https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/map
 if (!Array.prototype.map) {
     Array.prototype.map = function map(fun /*, thisp*/) {
-        var self = toObject(this),
-            length = self.length >>> 0,
-            result = Array(length),
-            thisp = arguments[1];
+        var len = +this.length;
+        if (typeof fun !== "function")
+          throw new TypeError();
 
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
+        var res = new Array(len);
+        var thisp = arguments[1];
+        for (var i = 0; i < len; i++) {
+            if (i in this)
+                res[i] = fun.call(thisp, this[i], i, this);
         }
 
-        for (var i = 0; i < length; i++) {
-            if (i in self)
-                result[i] = fun.call(thisp, self[i], i, self);
-        }
-        return result;
+        return res;
     };
 }
 
 // ES5 15.4.4.20
-// http://es5.github.com/#x15.4.4.20
-// https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/filter
 if (!Array.prototype.filter) {
-    Array.prototype.filter = function filter(fun /*, thisp */) {
-        var self = toObject(this),
-            length = self.length >>> 0,
-            result = [],
-            thisp = arguments[1];
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self && fun.call(thisp, self[i], i, self))
-                result.push(self[i]);
-        }
-        return result;
+    Array.prototype.filter = function filter(block /*, thisp */) {
+        var values = [];
+        var thisp = arguments[1];
+        for (var i = 0; i < this.length; i++)
+            if (block.call(thisp, this[i]))
+                values.push(this[i]);
+        return values;
     };
 }
 
 // ES5 15.4.4.16
-// http://es5.github.com/#x15.4.4.16
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/every
 if (!Array.prototype.every) {
-    Array.prototype.every = function every(fun /*, thisp */) {
-        var self = toObject(this),
-            length = self.length >>> 0,
-            thisp = arguments[1];
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self && !fun.call(thisp, self[i], i, self))
+    Array.prototype.every = function every(block /*, thisp */) {
+        var thisp = arguments[1];
+        for (var i = 0; i < this.length; i++)
+            if (!block.call(thisp, this[i]))
                 return false;
-        }
         return true;
     };
 }
 
 // ES5 15.4.4.17
-// http://es5.github.com/#x15.4.4.17
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/some
 if (!Array.prototype.some) {
-    Array.prototype.some = function some(fun /*, thisp */) {
-        var self = toObject(this),
-            length = self.length >>> 0,
-            thisp = arguments[1];
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self && fun.call(thisp, self[i], i, self))
+    Array.prototype.some = function some(block /*, thisp */) {
+        var thisp = arguments[1];
+        for (var i = 0; i < this.length; i++)
+            if (block.call(thisp, this[i]))
                 return true;
-        }
         return false;
     };
 }
 
 // ES5 15.4.4.21
-// http://es5.github.com/#x15.4.4.21
 // https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/reduce
 if (!Array.prototype.reduce) {
     Array.prototype.reduce = function reduce(fun /*, initial*/) {
-        var self = toObject(this),
-            length = self.length >>> 0;
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
+        var len = +this.length;
+        if (typeof fun !== "function")
+            throw new TypeError();
 
         // no value to return if no initial value and an empty array
-        if (!length && arguments.length == 1)
-            throw new TypeError(); // TODO message
+        if (len === 0 && arguments.length === 1)
+            throw new TypeError();
 
         var i = 0;
-        var result;
         if (arguments.length >= 2) {
-            result = arguments[1];
+            var rv = arguments[1];
         } else {
             do {
-                if (i in self) {
-                    result = self[i++];
+                if (i in this) {
+                    rv = this[i++];
                     break;
                 }
 
                 // if array contains no values, no initial value to return
-                if (++i >= length)
-                    throw new TypeError(); // TODO message
+                if (++i >= len)
+                    throw new TypeError();
             } while (true);
         }
 
-        for (; i < length; i++) {
-            if (i in self)
-                result = fun.call(void 0, result, self[i], i, self);
+        for (; i < len; i++) {
+            if (i in this)
+                rv = fun.call(null, rv, this[i], i, this);
         }
 
-        return result;
+        return rv;
     };
 }
 
 // ES5 15.4.4.22
-// http://es5.github.com/#x15.4.4.22
 // https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/reduceRight
 if (!Array.prototype.reduceRight) {
     Array.prototype.reduceRight = function reduceRight(fun /*, initial*/) {
-        var self = toObject(this),
-            length = self.length >>> 0;
-
-        // If no callback function or if callback is not a callable function
-        if (toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
+        var len = +this.length;
+        if (typeof fun !== "function")
+            throw new TypeError();
 
         // no value to return if no initial value, empty array
-        if (!length && arguments.length == 1)
-            throw new TypeError(); // TODO message
+        if (len === 0 && arguments.length === 1)
+            throw new TypeError();
 
-        var result, i = length - 1;
+        var i = len - 1;
         if (arguments.length >= 2) {
-            result = arguments[1];
+            var rv = arguments[1];
         } else {
             do {
-                if (i in self) {
-                    result = self[i--];
+                if (i in this) {
+                    rv = this[i--];
                     break;
                 }
 
                 // if array contains no values, no initial value to return
                 if (--i < 0)
-                    throw new TypeError(); // TODO message
+                    throw new TypeError();
             } while (true);
         }
 
-        do {
+        for (; i >= 0; i--) {
             if (i in this)
-                result = fun.call(void 0, result, self[i], i, self);
-        } while (i--);
+                rv = fun.call(null, rv, this[i], i, this);
+        }
 
-        return result;
+        return rv;
     };
 }
 
 // ES5 15.4.4.14
-// http://es5.github.com/#x15.4.4.14
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/indexOf
 if (!Array.prototype.indexOf) {
-    Array.prototype.indexOf = function indexOf(sought /*, fromIndex */ ) {
-        var self = toObject(this),
-            length = self.length >>> 0;
-
+    Array.prototype.indexOf = function indexOf(value /*, fromIndex */ ) {
+        var length = this.length;
         if (!length)
             return -1;
-
-        var i = 0;
-        if (arguments.length > 1)
-            i = toInteger(arguments[1]);
-
-        // handle negative indices
-        i = i >= 0 ? i : Math.max(0, length + i);
+        var i = arguments[1] || 0;
+        if (i >= length)
+            return -1;
+        if (i < 0)
+            i += length;
         for (; i < length; i++) {
-            if (i in self && self[i] === sought) {
+            if (!owns(this, i))
+                continue;
+            if (value === this[i])
                 return i;
-            }
         }
         return -1;
     };
 }
 
 // ES5 15.4.4.15
-// http://es5.github.com/#x15.4.4.15
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/lastIndexOf
 if (!Array.prototype.lastIndexOf) {
-    Array.prototype.lastIndexOf = function lastIndexOf(sought /*, fromIndex */) {
-        var self = toObject(this),
-            length = self.length >>> 0;
-
+    Array.prototype.lastIndexOf = function lastIndexOf(value /*, fromIndex */) {
+        var length = this.length;
         if (!length)
             return -1;
-        var i = length - 1;
-        if (arguments.length > 1)
-            i = Math.min(i, toInteger(arguments[1]));
-        // handle negative indices
-        i = i >= 0 ? i : length - Math.abs(i);
+        var i = arguments[1] || length;
+        if (i < 0)
+            i += length;
+        i = Math.min(i, length - 1);
         for (; i >= 0; i--) {
-            if (i in self && sought === self[i])
+            if (!owns(this, i))
+                continue;
+            if (value === this[i])
                 return i;
         }
         return -1;
@@ -727,37 +505,32 @@ if (!Array.prototype.lastIndexOf) {
 //
 
 // ES5 15.2.3.2
-// http://es5.github.com/#x15.2.3.2
 if (!Object.getPrototypeOf) {
     // https://github.com/kriskowal/es5-shim/issues#issue/2
     // http://ejohn.org/blog/objectgetprototypeof/
     // recommended by fschaefer on github
     Object.getPrototypeOf = function getPrototypeOf(object) {
-        return object.__proto__ || (
-            object.constructor ?
-            object.constructor.prototype :
-            prototypeOfObject
-        );
+        return object.__proto__ || object.constructor.prototype;
+        // or undefined if not available in this engine
     };
 }
 
 // ES5 15.2.3.3
-// http://es5.github.com/#x15.2.3.3
 if (!Object.getOwnPropertyDescriptor) {
     var ERR_NON_OBJECT = "Object.getOwnPropertyDescriptor called on a " +
                          "non-object: ";
     Object.getOwnPropertyDescriptor = function getOwnPropertyDescriptor(object, property) {
-        if ((typeof object != "object" && typeof object != "function") || object === null)
+        if ((typeof object !== "object" && typeof object !== "function") || object === null)
             throw new TypeError(ERR_NON_OBJECT + object);
         // If object does not owns property return undefined immediately.
         if (!owns(object, property))
-            return;
+            return undefined;
 
-        var descriptor, getter, setter;
+        var despriptor, getter, setter;
 
         // If object has a property then it's for sure both `enumerable` and
         // `configurable`.
-        descriptor =  { enumerable: true, configurable: true };
+        despriptor =  { enumerable: true, configurable: true };
 
         // If JS engine supports accessor properties then property may be a
         // getter or setter.
@@ -794,7 +567,6 @@ if (!Object.getOwnPropertyDescriptor) {
 }
 
 // ES5 15.2.3.4
-// http://es5.github.com/#x15.2.3.4
 if (!Object.getOwnPropertyNames) {
     Object.getOwnPropertyNames = function getOwnPropertyNames(object) {
         return Object.keys(object);
@@ -802,14 +574,13 @@ if (!Object.getOwnPropertyNames) {
 }
 
 // ES5 15.2.3.5
-// http://es5.github.com/#x15.2.3.5
 if (!Object.create) {
     Object.create = function create(prototype, properties) {
         var object;
         if (prototype === null) {
             object = { "__proto__": null };
         } else {
-            if (typeof prototype != "object")
+            if (typeof prototype !== "object")
                 throw new TypeError("typeof prototype["+(typeof prototype)+"] != 'object'");
             var Type = function () {};
             Type.prototype = prototype;
@@ -820,65 +591,24 @@ if (!Object.create) {
             // objects created using `Object.create`
             object.__proto__ = prototype;
         }
-        if (properties !== void 0)
+        if (typeof properties !== "undefined")
             Object.defineProperties(object, properties);
         return object;
     };
 }
 
 // ES5 15.2.3.6
-// http://es5.github.com/#x15.2.3.6
-
-// Patch for WebKit and IE8 standard mode
-// Designed by hax <hax.github.com>
-// related issue: https://github.com/kriskowal/es5-shim/issues#issue/5
-// IE8 Reference:
-//     http://msdn.microsoft.com/en-us/library/dd282900.aspx
-//     http://msdn.microsoft.com/en-us/library/dd229916.aspx
-// WebKit Bugs:
-//     https://bugs.webkit.org/show_bug.cgi?id=36423
-
-function doesDefinePropertyWork(object) {
-    try {
-        Object.defineProperty(object, "sentinel", {});
-        return "sentinel" in object;
-    } catch (exception) {
-        // returns falsy
-    }
-}
-
-// check whether defineProperty works if it's given. Otherwise,
-// shim partially.
-if (Object.defineProperty) {
-    var definePropertyWorksOnObject = doesDefinePropertyWork({});
-    var definePropertyWorksOnDom = typeof document == "undefined" ||
-        doesDefinePropertyWork(document.createElement("div"));
-    if (!definePropertyWorksOnObject || !definePropertyWorksOnDom) {
-        var definePropertyFallback = Object.defineProperty;
-    }
-}
-
-if (!Object.defineProperty || definePropertyFallback) {
+if (!Object.defineProperty) {
     var ERR_NON_OBJECT_DESCRIPTOR = "Property description must be an object: ";
     var ERR_NON_OBJECT_TARGET = "Object.defineProperty called on non-object: "
     var ERR_ACCESSORS_NOT_SUPPORTED = "getters & setters can not be defined " +
                                       "on this javascript engine";
 
     Object.defineProperty = function defineProperty(object, property, descriptor) {
-        if ((typeof object != "object" && typeof object != "function") || object === null)
+        if (typeof object !== "object" && typeof object !== "function")
             throw new TypeError(ERR_NON_OBJECT_TARGET + object);
-        if ((typeof descriptor != "object" && typeof descriptor != "function") || descriptor === null)
+        if (typeof object !== "object" || object === null)
             throw new TypeError(ERR_NON_OBJECT_DESCRIPTOR + descriptor);
-
-        // make a valiant attempt to use the real defineProperty
-        // for I8's DOM elements.
-        if (definePropertyFallback) {
-            try {
-                return definePropertyFallback.call(Object, object, property, descriptor);
-            } catch (exception) {
-                // try the shim if the real one doesn't work
-            }
-        }
 
         // If it's a data property.
         if (owns(descriptor, "value")) {
@@ -911,7 +641,7 @@ if (!Object.defineProperty || definePropertyFallback) {
                 delete object[property];
                 object[property] = descriptor.value;
                 // Setting original `__proto__` back now.
-                object.__proto__ = prototype;
+                object.prototype;
             } else {
                 object[property] = descriptor.value;
             }
@@ -930,7 +660,6 @@ if (!Object.defineProperty || definePropertyFallback) {
 }
 
 // ES5 15.2.3.7
-// http://es5.github.com/#x15.2.3.7
 if (!Object.defineProperties) {
     Object.defineProperties = function defineProperties(object, properties) {
         for (var property in properties) {
@@ -942,7 +671,6 @@ if (!Object.defineProperties) {
 }
 
 // ES5 15.2.3.8
-// http://es5.github.com/#x15.2.3.8
 if (!Object.seal) {
     Object.seal = function seal(object) {
         // this is misleading and breaks feature-detection, but
@@ -953,7 +681,6 @@ if (!Object.seal) {
 }
 
 // ES5 15.2.3.9
-// http://es5.github.com/#x15.2.3.9
 if (!Object.freeze) {
     Object.freeze = function freeze(object) {
         // this is misleading and breaks feature-detection, but
@@ -969,7 +696,7 @@ try {
 } catch (exception) {
     Object.freeze = (function freeze(freezeObject) {
         return function freeze(object) {
-            if (typeof object == "function") {
+            if (typeof object === "function") {
                 return object;
             } else {
                 return freezeObject(object);
@@ -979,7 +706,6 @@ try {
 }
 
 // ES5 15.2.3.10
-// http://es5.github.com/#x15.2.3.10
 if (!Object.preventExtensions) {
     Object.preventExtensions = function preventExtensions(object) {
         // this is misleading and breaks feature-detection, but
@@ -990,7 +716,6 @@ if (!Object.preventExtensions) {
 }
 
 // ES5 15.2.3.11
-// http://es5.github.com/#x15.2.3.11
 if (!Object.isSealed) {
     Object.isSealed = function isSealed(object) {
         return false;
@@ -998,7 +723,6 @@ if (!Object.isSealed) {
 }
 
 // ES5 15.2.3.12
-// http://es5.github.com/#x15.2.3.12
 if (!Object.isFrozen) {
     Object.isFrozen = function isFrozen(object) {
         return false;
@@ -1006,38 +730,25 @@ if (!Object.isFrozen) {
 }
 
 // ES5 15.2.3.13
-// http://es5.github.com/#x15.2.3.13
 if (!Object.isExtensible) {
     Object.isExtensible = function isExtensible(object) {
-        // 1. If Type(O) is not Object throw a TypeError exception.
-        if (Object(object) === object) {
-            throw new TypeError(); // TODO message
-        }
-        // 2. Return the Boolean value of the [[Extensible]] internal property of O.
-        var name = '';
-        while (owns(object, name)) {
-            name += '?';
-        }
-        object[name] = true;
-        var returnValue = owns(object, name);
-        delete object[name];
-        return returnValue;
+        return true;
     };
 }
 
 // ES5 15.2.3.14
-// http://es5.github.com/#x15.2.3.14
+// http://whattheheadsaid.com/2010/10/a-safer-object-keys-compatibility-implementation
 if (!Object.keys) {
-    // http://whattheheadsaid.com/2010/10/a-safer-object-keys-compatibility-implementation
+
     var hasDontEnumBug = true,
         dontEnums = [
-            "toString",
-            "toLocaleString",
-            "valueOf",
-            "hasOwnProperty",
-            "isPrototypeOf",
-            "propertyIsEnumerable",
-            "constructor"
+            'toString',
+            'toLocaleString',
+            'valueOf',
+            'hasOwnProperty',
+            'isPrototypeOf',
+            'propertyIsEnumerable',
+            'constructor'
         ],
         dontEnumsLength = dontEnums.length;
 
@@ -1046,7 +757,10 @@ if (!Object.keys) {
 
     Object.keys = function keys(object) {
 
-        if ((typeof object != "object" && typeof object != "function") || object === null)
+        if (
+            typeof object !== "object" && typeof object !== "function"
+            || object === null
+        )
             throw new TypeError("Object.keys called on a non-object");
 
         var keys = [];
@@ -1076,39 +790,22 @@ if (!Object.keys) {
 //
 
 // ES5 15.9.5.43
-// http://es5.github.com/#x15.9.5.43
-// This function returns a String value represent the instance in time 
-// represented by this Date object. The format of the String is the Date Time 
-// string format defined in 15.9.1.15. All fields are present in the String. 
-// The time zone is always UTC, denoted by the suffix Z. If the time value of 
-// this object is not a finite Number a RangeError exception is thrown.
-if (!Date.prototype.toISOString || (new Date(-62198755200000).toISOString().indexOf('-000001') === -1)) {
+// Format a Date object as a string according to a subset of the ISO-8601 standard.
+// Useful in Atom, among other things.
+if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function toISOString() {
-        var result, length, value, year;
-        if (!isFinite(this))
-            throw new RangeError;
-
-        // the date time string format is specified in 15.9.1.15.
-        result = [this.getUTCMonth() + 1, this.getUTCDate(),
-            this.getUTCHours(), this.getUTCMinutes(), this.getUTCSeconds()];
-        year = this.getUTCFullYear();
-        year = (year < 0 ? '-' : (year > 9999 ? '+' : '')) + ('00000' + Math.abs(year)).slice(0 <= year && year <= 9999 ? -4 : -6);
-
-        length = result.length;
-        while (length--) {
-            value = result[length];
-            // pad months, days, hours, minutes, and seconds to have two digits.
-            if (value < 10)
-                result[length] = "0" + value;
-        }
-        // pad milliseconds to have three digits.
-        return year + "-" + result.slice(0, 2).join("-") + "T" + result.slice(2).join(":") + "." +
-            ("000" + this.getUTCMilliseconds()).slice(-3) + "Z";
+        return (
+            this.getUTCFullYear() + "-" +
+            (this.getUTCMonth() + 1) + "-" +
+            this.getUTCDate() + "T" +
+            this.getUTCHours() + ":" +
+            this.getUTCMinutes() + ":" +
+            this.getUTCSeconds() + "Z"
+        );
     }
 }
 
 // ES5 15.9.4.4
-// http://es5.github.com/#x15.9.4.4
 if (!Date.now) {
     Date.now = function now() {
         return new Date().getTime();
@@ -1116,13 +813,11 @@ if (!Date.now) {
 }
 
 // ES5 15.9.5.44
-// http://es5.github.com/#x15.9.5.44
-// This function provides a String representation of a Date object for use by 
-// JSON.stringify (15.12.3).
 if (!Date.prototype.toJSON) {
     Date.prototype.toJSON = function toJSON(key) {
-        // When the toJSON method is called with argument key, the following 
-        // steps are taken:
+        // This function provides a String representation of a Date object for
+        // use by JSON.stringify (15.12.3). When the toJSON method is called
+        // with argument key, the following steps are taken:
 
         // 1.  Let O be the result of calling ToObject, giving it the this
         // value as its argument.
@@ -1132,10 +827,10 @@ if (!Date.prototype.toJSON) {
         // 4. Let toISO be the result of calling the [[Get]] internal method of
         // O with argument "toISOString".
         // 5. If IsCallable(toISO) is false, throw a TypeError exception.
-        if (typeof this.toISOString != "function")
-            throw new TypeError(); // TODO message
+        if (typeof this.toISOString !== "function")
+            throw new TypeError();
         // 6. Return the result of calling the [[Call]] internal method of
-        //  toISO with O as the this value and an empty argument list.
+        // toISO with O as the this value and an empty argument list.
         return this.toISOString();
 
         // NOTE 1 The argument is ignored.
@@ -1149,20 +844,21 @@ if (!Date.prototype.toJSON) {
     };
 }
 
-// ES5 15.9.4.2
-// http://es5.github.com/#x15.9.4.2
+// 15.9.4.2 Date.parse (string)
+// 15.9.1.15 Date Time String Format
+// Date.parse
 // based on work shared by Daniel Friesen (dantman)
 // http://gist.github.com/303249
-if (Date.parse("+275760-09-13T00:00:00.000Z") !== 8.64e15) {
+if (isNaN(Date.parse("T00:00"))) {
     // XXX global assignment won't work in embeddings that use
     // an alternate object for the context.
     Date = (function(NativeDate) {
 
         // Date.length === 7
-        var Date = function Date(Y, M, D, h, m, s, ms) {
+        var Date = function(Y, M, D, h, m, s, ms) {
             var length = arguments.length;
             if (this instanceof NativeDate) {
-                var date = length == 1 && String(Y) === Y ? // isString(Y)
+                var date = length === 1 && String(Y) === Y ? // isString(Y)
                     // We explicitly pass it through parse:
                     new NativeDate(Date.parse(Y)) :
                     // We have to manually make calls depending on argument
@@ -1182,26 +878,33 @@ if (Date.parse("+275760-09-13T00:00:00.000Z") !== 8.64e15) {
             return NativeDate.apply(this, arguments);
         };
 
-        // 15.9.1.15 Date Time String Format.
+        // 15.9.1.15 Date Time String Format
         var isoDateExpression = new RegExp("^" +
-            "(\\d{4}|[\+\-]\\d{6})" + // four-digit year capture or sign + 6-digit extended year
-            "(?:-(\\d{2})" + // optional month capture
-            "(?:-(\\d{2})" + // optional day capture
-            "(?:" + // capture hours:minutes:seconds.milliseconds
-                "T(\\d{2})" + // hours capture
-                ":(\\d{2})" + // minutes capture
-                "(?:" + // optional :seconds.milliseconds
-                    ":(\\d{2})" + // seconds capture
-                    "(?:\\.(\\d{3}))?" + // milliseconds capture
-                ")?" +
-            "(?:" + // capture UTC offset component
-                "Z|" + // UTC capture
-                "(?:" + // offset specifier +/-hours:minutes
-                    "([-+])" + // sign capture
-                    "(\\d{2})" + // hours offset capture
-                    ":(\\d{2})" + // minutes offset capture
+            "(?:" + // optional year-month-day
+                "(" + // year capture
+                    "(?:[+-]\\d\\d)?" + // 15.9.1.15.1 Extended years
+                    "\\d\\d\\d\\d" + // four-digit year
                 ")" +
-            ")?)?)?)?" +
+                "(?:-" + // optional month-day
+                    "(\\d\\d)" + // month capture
+                    "(?:-" + // optional day
+                        "(\\d\\d)" + // day capture
+                    ")?" +
+                ")?" +
+            ")?" +
+            "(?:T" + // hour:minute:second.subsecond
+                "(\\d\\d)" + // hour capture
+                ":(\\d\\d)" + // minute capture
+                "(?::" + // optional :second.subsecond
+                    "(\\d\\d)" + // second capture
+                    "(?:\\.(\\d\\d\\d))?" + // milisecond capture
+                ")?" +
+            ")?" +
+            "(?:" + // time zone
+                "Z|" + // UTC capture
+                "([+-])(\\d\\d):(\\d\\d)" + // timezone offset
+                // capture sign, hour, minute
+            ")?" +
         "$");
 
         // Copy any custom methods a 3rd party library may have added
@@ -1214,49 +917,42 @@ if (Date.parse("+275760-09-13T00:00:00.000Z") !== 8.64e15) {
         Date.prototype = NativeDate.prototype;
         Date.prototype.constructor = Date;
 
-        // Upgrade Date.parse to handle simplified ISO 8601 strings
+        // Upgrade Date.parse to handle the ISO dates we use
+        // TODO review specification to ascertain whether it is
+        // necessary to implement partial ISO date strings.
         Date.parse = function parse(string) {
             var match = isoDateExpression.exec(string);
             if (match) {
                 match.shift(); // kill match[0], the full match
-                // parse months, days, hours, minutes, seconds, and milliseconds
-                for (var i = 1; i < 7; i++) {
-                    // provide default values if necessary
+                // recognize times without dates before normalizing the
+                // numeric values, for later use
+                var timeOnly = match[0] === undefined;
+                // parse numerics
+                for (var i = 0; i < 10; i++) {
+                    // skip + or - for the timezone offset
+                    if (i === 7)
+                        continue;
+                    // Note: parseInt would read 0-prefix numbers as
+                    // octal.  Number constructor or unary + work better
+                    // here:
                     match[i] = +(match[i] || (i < 3 ? 1 : 0));
                     // match[1] is the month. Months are 0-11 in JavaScript
-                    // `Date` objects, but 1-12 in ISO notation, so we
+                    // Date objects, but 1-12 in ISO notation, so we
                     // decrement.
-                    if (i == 1)
+                    if (i === 1)
                         match[i]--;
                 }
+                // if no year-month-date is provided, return a milisecond
+                // quantity instead of a UTC date number value.
+                if (timeOnly)
+                    return ((match[3] * 60 + match[4]) * 60 + match[5]) * 1000 + match[6];
 
-                // parse the UTC offset component
-                var minuteOffset = +match.pop(), hourOffset = +match.pop(), sign = match.pop();
+                // account for an explicit time zone offset if provided
+                var offset = (match[8] * 60 + match[9]) * 60 * 1000;
+                if (match[6] === "-")
+                    offset = -offset;
 
-                // compute the explicit time zone offset if specified
-                var offset = 0;
-                if (sign) {
-                    // detect invalid offsets and return early
-                    if (hourOffset > 23 || minuteOffset > 59)
-                        return NaN;
-
-                    // express the provided time zone offset in minutes. The offset is
-                    // negative for time zones west of UTC; positive otherwise.
-                    offset = (hourOffset * 60 + minuteOffset) * 6e4 * (sign == "+" ? -1 : 1);
-                }
-
-                // Date.UTC for years between 0 and 99 converts year to 1900 + year
-                // The Gregorian calendar has a 400-year cycle, so 
-                // to Date.UTC(year + 400, .... ) - 12622780800000 == Date.UTC(year, ...),
-                // where 12622780800000 - number of milliseconds in Gregorian calendar 400 years
-                var year = +match[0];
-                if (0 <= year && year <= 99) {
-                    match[0] = year + 400;
-                    return NativeDate.UTC.apply(this, match) + offset - 12622780800000;
-                }
-
-                // compute a new UTC date value, accounting for the optional offset
-                return NativeDate.UTC.apply(this, match) + offset;
+                return NativeDate.UTC.apply(this, match.slice(0, 7)) + offset;
             }
             return NativeDate.parse.apply(this, arguments);
         };
@@ -1271,52 +967,15 @@ if (Date.parse("+275760-09-13T00:00:00.000Z") !== 8.64e15) {
 //
 
 // ES5 15.5.4.20
-// http://es5.github.com/#x15.5.4.20
-var ws = "\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003" +
-    "\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028" +
-    "\u2029\uFEFF";
-if (!String.prototype.trim || ws.trim()) {
+if (!String.prototype.trim) {
     // http://blog.stevenlevithan.com/archives/faster-trim-javascript
-    // http://perfectionkills.com/whitespace-deviations/
-    ws = "[" + ws + "]";
-    var trimBeginRegexp = new RegExp("^" + ws + ws + "*"),
-        trimEndRegexp = new RegExp(ws + ws + "*$");
+    var trimBeginRegexp = /^\s\s*/;
+    var trimEndRegexp = /\s\s*$/;
     String.prototype.trim = function trim() {
-        return String(this).replace(trimBeginRegexp, "").replace(trimEndRegexp, "");
+        return String(this).replace(trimBeginRegexp, '').replace(trimEndRegexp, '');
     };
 }
 
-//
-// Util
-// ======
-//
-
-// ES5 9.4
-// http://es5.github.com/#x9.4
-// http://jsperf.com/to-integer
-var toInteger = function (n) {
-    n = +n;
-    if (n !== n) // isNaN
-        n = 0;
-    else if (n !== 0 && n !== (1/0) && n !== -(1/0))
-        n = (n > 0 || -1) * Math.floor(Math.abs(n));
-    return n;
-};
-
-var prepareString = "a"[0] != "a",
-    // ES5 9.9
-    // http://es5.github.com/#x9.9
-    toObject = function (o) {
-        if (o == null) { // this matches both null and undefined
-            throw new TypeError(); // TODO message
-        }
-        // If the implementation doesn't support by-index access of
-        // string characters (ex. IE < 7), split the string
-        if (prepareString && typeof o == "string" && o) {
-            return o.split("");
-        }
-        return Object(o);
-    };
 });/* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -1435,9 +1094,9 @@ define('ace/ace', ['require', 'exports', 'module' , 'pilot/index', 'pilot/fixold
 
 define('pilot/index', ['require', 'exports', 'module' , 'pilot/fixoldbrowsers', 'pilot/types/basic', 'pilot/types/command', 'pilot/types/settings', 'pilot/commands/settings', 'pilot/commands/basic', 'pilot/settings/canon', 'pilot/canon'], function(require, exports, module) {
 
-require('pilot/fixoldbrowsers');
-
 exports.startup = function(data, reason) {
+    require('pilot/fixoldbrowsers');
+
     require('pilot/types/basic').startup(data, reason);
     require('pilot/types/command').startup(data, reason);
     require('pilot/types/settings').startup(data, reason);
@@ -3272,11 +2931,7 @@ exports.isMac = (os == "mac");
 /** Is the user using a browser that identifies itself as Linux */
 exports.isLinux = (os == "linux");
 
-exports.isIE = 
-    navigator.appName == "Microsoft Internet Explorer"
-    && parseFloat(navigator.userAgent.match(/MSIE ([0-9]+[\.0-9]+)/)[1]);
-    
-exports.isOldIE = exports.isIE && exports.isIE < 9;
+exports.isIE = ! + "\v1";
 
 /** Is this Firefox or related? */
 exports.isGecko = exports.isMozilla = window.controllers && window.navigator.product === "Gecko";
@@ -3295,8 +2950,6 @@ exports.isChrome = parseFloat(ua.split(" Chrome/")[1]) || undefined;
 exports.isAIR = ua.indexOf("AdobeAIR") >= 0;
 
 exports.isIPad = ua.indexOf("iPad") >= 0;
-
-exports.isTouchPad = ua.indexOf("TouchPad") >= 0;
 
 /**
  * I hate doing this, but we need some way to determine if the user is on a Mac
@@ -3483,7 +3136,7 @@ var Keys = (function() {
     };
 
     // A reverse map of FUNCTION_KEYS
-    for (var i in ret.FUNCTION_KEYS) {
+    for (i in ret.FUNCTION_KEYS) {
         var name = ret.FUNCTION_KEYS[i].toUpperCase();
         ret[name] = parseInt(i, 10);
     }
@@ -3527,7 +3180,6 @@ exports.keyCodeToString = function(keyCode) {
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
  *      Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
- *      Mike de Boer <mike AT ajax DOT org>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -3550,45 +3202,16 @@ var EventEmitter = {};
 EventEmitter._emit =
 EventEmitter._dispatchEvent = function(eventName, e) {
     this._eventRegistry = this._eventRegistry || {};
-    this._defaultHandlers = this._defaultHandlers || {};
 
-    var listeners = this._eventRegistry[eventName] || [];
-    var defaultHandler = this._defaultHandlers[eventName];
-    if (!listeners.length && !defaultHandler)
-        return;
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners || !listeners.length) return;
 
-    e = e || {};
+    var e = e || {};
     e.type = eventName;
-    
-    if (!e.stopPropagation) {
-        e.stopPropagation = function() {
-            this.propagationStopped = true;
-        };
-    }
-    
-    if (!e.preventDefault) {
-        e.preventDefault = function() {
-            this.defaultPrevented = true;
-        };
-    }
 
     for (var i=0; i<listeners.length; i++) {
         listeners[i](e);
-        if (e.propagationStopped)
-            break;
     }
-    
-    if (defaultHandler && !e.defaultPrevented)
-        defaultHandler(e);
-};
-
-EventEmitter.setDefaultHandler = function(eventName, callback) {
-    this._defaultHandlers = this._defaultHandlers || {};
-    
-    if (this._defaultHandlers[eventName])
-        throw new Error("The default handler for '" + eventName + "' is already set");
-        
-    this._defaultHandlers[eventName] = callback;
 };
 
 EventEmitter.on =
@@ -3596,11 +3219,12 @@ EventEmitter.addEventListener = function(eventName, callback) {
     this._eventRegistry = this._eventRegistry || {};
 
     var listeners = this._eventRegistry[eventName];
-    if (!listeners)
-        var listeners = this._eventRegistry[eventName] = [];
-
-    if (listeners.indexOf(callback) == -1)
+    if (!listeners) {
+      var listeners = this._eventRegistry[eventName] = [];
+    }
+    if (listeners.indexOf(callback) == -1) {
         listeners.push(callback);
+    }
 };
 
 EventEmitter.removeListener =
@@ -3608,17 +3232,18 @@ EventEmitter.removeEventListener = function(eventName, callback) {
     this._eventRegistry = this._eventRegistry || {};
 
     var listeners = this._eventRegistry[eventName];
-    if (!listeners)
-        return;
-
+    if (!listeners) {
+      return;
+    }
     var index = listeners.indexOf(callback);
-    if (index !== -1)
+    if (index !== -1) {
         listeners.splice(index, 1);
+    }
 };
 
 EventEmitter.removeAllListeners = function(eventName) {
     if (this._eventRegistry) this._eventRegistry[eventName] = [];
-};
+}
 
 exports.EventEmitter = EventEmitter;
 
@@ -3893,8 +3518,9 @@ exports.deferredCall = function(fcn) {
     };
 
     var deferred = function(timeout) {
-        deferred.cancel();
-        timer = setTimeout(callback, timeout || 0);
+        if (!timer) {
+            timer = setTimeout(callback, timeout || 0);
+        }
         return deferred;
     }
 
@@ -4892,7 +4518,7 @@ exports.Plugin.prototype = {
     startup: function(data, reason) {
         reason = reason || exports.REASONS.APP_STARTUP;
         var pr = new Promise();
-        if (this.status < this.REGISTERED) {
+        if (this.status != this.REGISTERED) {
             pr.resolve(this);
             return pr;
         }
@@ -5236,7 +4862,6 @@ exports._recent = _recent;
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
  *      Mihai Sucan <mihai AT sucan AT gmail ODT com>
- *      Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -5347,53 +4972,22 @@ exports.setCssClass = function(node, className, include) {
     }
 };
 
-function hasCssString(id, doc) {
-    var index = 0, sheets;
-    doc = doc || document
-
-    if ((sheets = doc.styleSheets)) {
-        while (index < sheets.length)
-            if (sheets[index++].title === id) return true;
-    } else if ((sheets = doc.getElementsByTagName("style"))) {
-        while (index < sheets.length)
-            if (sheets[index++].id === id) return true;
-    }
-
-    return false;
-}
-exports.hasCssString = hasCssString;
-
-exports.importCssString = function importCssString(cssText, id, doc) {
+exports.importCssString = function(cssText, doc){
     doc = doc || document;
-    // If style is already imported return immediately.
-    if (id && hasCssString(id, doc)) return null;
+
     if (doc.createStyleSheet) {
         var sheet = doc.createStyleSheet();
         sheet.cssText = cssText;
-        if (id) sheet.title = id;
-    } else {
+    }
+    else {
         var style = doc.createElementNS ?
                     doc.createElementNS(XHTML_NS, "style") :
                     doc.createElement("style");
 
-        if (id) style.id = id;
         style.appendChild(doc.createTextNode(cssText));
 
         var head = doc.getElementsByTagName("head")[0] || doc.documentElement;
         head.appendChild(style);
-    }
-};
-
-exports.importCssStylsheet = function(uri, doc) {
-    if (doc.createStyleSheet) {
-        var sheet = doc.createStyleSheet(uri);
-    } else {
-        var link = exports.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = uri;
-
-        var head = doc.getElementsByTagName("head")[0] || doc.documentElement;
-        head.appendChild(link);
     }
 };
 
@@ -5439,7 +5033,7 @@ else
         return element.currentStyle
     };
 
-exports.scrollbarWidth = function(document) {
+exports.scrollbarWidth = function() {
 
     var inner = exports.createElement("p");
     inner.style.width = "100%";
@@ -5489,7 +5083,6 @@ exports.setInnerHtml = function(el, innerHtml) {
 };
 
 exports.setInnerText = function(el, innerText) {
-    var document = el.ownerDocument;
     if (document.body && "textContent" in document.body)
         el.textContent = innerText;
     else
@@ -5498,7 +5091,6 @@ exports.setInnerText = function(el, innerText) {
 };
 
 exports.getInnerText = function(el) {
-    var document = el.ownerDocument;
     if (document.body && "textContent" in document.body)
         return el.textContent;
     else
@@ -5631,7 +5223,7 @@ exports.preventDefault = function(e) {
 };
 
 exports.getDocumentX = function(e) {
-    if (e.clientX) {
+    if (e.clientX) {        
         return e.clientX + dom.getPageScrollLeft();
     } else {
         return e.pageX;
@@ -5654,7 +5246,7 @@ exports.getButton = function(e) {
         return 0;
     else if (e.type == "contextmenu")
         return 2;
-
+        
     // DOM Event
     if (e.preventDefault) {
         return e.button;
@@ -5672,14 +5264,9 @@ if (document.documentElement.setCapture) {
             return exports.stopPropagation(e);
         }
 
-        var called = false;
         function onReleaseCapture(e) {
-            eventHandler(e);
-
-            if (!called) {
-                called = true;
-                releaseCaptureHandler();
-            }
+            eventHandler && eventHandler(e);
+            releaseCaptureHandler && releaseCaptureHandler();
 
             exports.removeListener(el, "mousemove", eventHandler);
             exports.removeListener(el, "mouseup", onReleaseCapture);
@@ -5717,26 +5304,14 @@ else {
 }
 
 exports.addMouseWheelListener = function(el, callback) {
-    var max = 0;
     var listener = function(e) {
         if (e.wheelDelta !== undefined) {
-
-            // some versions of Safari (e.g. 5.0.5) report insanely high
-            // scroll values. These browsers require a higher factor
-            if (Math.abs(e.wheelDeltaY) > max)
-                max = Math.abs(e.wheelDeltaY)
-
-            if (max > 5000)
-                factor = 400;
-            else
-                factor = 8;
-
             if (e.wheelDeltaX !== undefined) {
-                e.wheelX = -e.wheelDeltaX / factor;
-                e.wheelY = -e.wheelDeltaY / factor;
+                e.wheelX = -e.wheelDeltaX / 8;
+                e.wheelY = -e.wheelDeltaY / 8;
             } else {
                 e.wheelX = 0;
-                e.wheelY = -e.wheelDelta / factor;
+                e.wheelY = -e.wheelDelta / 8;
             }
         }
         else {
@@ -5777,13 +5352,13 @@ exports.addMultiMouseDownListener = function(el, button, count, timeout, callbac
             clicks = 0;
             callback(e);
         }
-
+        
         if (isButton)
             return exports.preventDefault(e);
     };
 
     exports.addListener(el, "mousedown", listener);
-    useragent.isOldIE && exports.addListener(el, "dblclick", listener);
+    useragent.isIE && exports.addListener(el, "dblclick", listener);
 };
 
 function normalizeCommandKeys(callback, e, keyCode) {
@@ -5821,9 +5396,10 @@ function normalizeCommandKeys(callback, e, keyCode) {
     // If there is no hashID and the keyCode is not a function key, then
     // we don't call the callback as we don't handle a command key here
     // (it's a normal key/character input).
-    if (!(keyCode in keys.FUNCTION_KEYS) && !(keyCode in keys.PRINTABLE_KEYS)) {
+    if (hashId == 0 && !(keyCode in keys.FUNCTION_KEYS)) {
         return false;
     }
+
     return callback(e, hashId, keyCode);
 }
 
@@ -5856,7 +5432,7 @@ exports.addCommandKeyListener = function(el, callback) {
             addListener(el, "keypress", function(e) {
                 var keyId = e.keyIdentifier || e.keyCode;
                 if (lastDown !== keyId) {
-                    return normalizeCommandKeys(callback, e, lastDown);
+                    return normalizeCommandKeys(callback, e, e.keyCode);
                 } else {
                     lastDown = null;
                 }
@@ -5906,7 +5482,7 @@ exports.addCommandKeyListener = function(el, callback) {
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/editor', ['require', 'exports', 'module' , 'pilot/fixoldbrowsers', 'pilot/oop', 'pilot/event', 'pilot/lang', 'pilot/useragent', 'ace/keyboard/textinput', 'ace/mouse/mouse_handler', 'ace/keyboard/keybinding', 'ace/edit_session', 'ace/search', 'ace/range', 'pilot/event_emitter'], function(require, exports, module) {
+define('ace/editor', ['require', 'exports', 'module' , 'pilot/fixoldbrowsers', 'pilot/oop', 'pilot/event', 'pilot/lang', 'pilot/useragent', 'ace/keyboard/textinput', 'ace/mouse_handler', 'ace/keyboard/keybinding', 'ace/edit_session', 'ace/search', 'ace/range', 'pilot/event_emitter'], function(require, exports, module) {
 
 require("pilot/fixoldbrowsers");
 
@@ -5915,7 +5491,7 @@ var event = require("pilot/event");
 var lang = require("pilot/lang");
 var useragent = require("pilot/useragent");
 var TextInput = require("ace/keyboard/textinput").TextInput;
-var MouseHandler = require("ace/mouse/mouse_handler").MouseHandler;
+var MouseHandler = require("ace/mouse_handler").MouseHandler;
 //var TouchHandler = require("ace/touch_handler").TouchHandler;
 var KeyBinding = require("ace/keyboard/keybinding").KeyBinding;
 var EditSession = require("ace/edit_session").EditSession;
@@ -6098,7 +5674,7 @@ var Editor =function(renderer, session) {
     this.unsetStyle = function(style) {
         this.renderer.unsetStyle(style);
     };
-
+    
     this.setFontSize = function(size) {
         this.container.style.fontSize = size;
     };
@@ -6131,13 +5707,16 @@ var Editor =function(renderer, session) {
         // Safari needs the timeout
         // iOS and Firefox need it called immediately
         // to be on the save side we do both
+        // except for IE
         var _self = this;
-        setTimeout(function() {
-            _self.textInput.focus();
-        });
+        if (!useragent.isIE) {
+            setTimeout(function() {
+                _self.textInput.focus();
+            });
+        }
         this.textInput.focus();
     };
-
+    
     this.isFocused = function() {
         return this.textInput.isFocused();
     };
@@ -6167,8 +5746,6 @@ var Editor =function(renderer, session) {
         else
             lastRow = Infinity;
         this.renderer.updateLines(range.start.row, lastRow);
-
-        this._dispatchEvent("change", e);
 
         // update cursor because tab characters can influence the cursor position
         this.renderer.updateCursor();
@@ -6252,7 +5829,7 @@ var Editor =function(renderer, session) {
     };
 
     this.onChangeMode = function() {
-        this.renderer.updateText();
+        this.renderer.updateText()
     };
 
     this.onChangeWrapLimit = function() {
@@ -6272,23 +5849,20 @@ var Editor =function(renderer, session) {
     };
 
     this.getCopyText = function() {
-        var text = "";
-        if (!this.selection.isEmpty())
-            text = this.session.getTextRange(this.getSelectionRange());
-
-        this._emit("copy", text);
-        return text;
+        if (!this.selection.isEmpty()) {
+            return this.session.getTextRange(this.getSelectionRange());
+        }
+        else {
+            return "";
+        }
     };
 
     this.onCut = function() {
         if (this.$readOnly)
             return;
 
-        var range = this.getSelectionRange();
-        this._emit("cut", range);
-
         if (!this.selection.isEmpty()) {
-            this.session.remove(range);
+            this.session.remove(this.getSelectionRange())
             this.clearSelection();
         }
     };
@@ -6383,15 +5957,14 @@ var Editor =function(renderer, session) {
                 session.remove(new Range(row, 0, row, i));
             }
             session.indentRows(cursor.row + 1, end.row, lineIndent);
+        } else {
+            if (shouldOutdent) {
+                mode.autoOutdent(lineState, session, cursor.row);
+            }
         }
-        if (shouldOutdent)
-            mode.autoOutdent(lineState, session, cursor.row);
     };
 
     this.onTextInput = function(text, notPasted) {
-        if (!notPasted)
-            this._emit("paste", text);
-
         // In case the text was not pasted and we got only one character, then
         // handel it as a command key stroke.
         if (notPasted && text.length == 1) {
@@ -6518,30 +6091,38 @@ var Editor =function(renderer, session) {
     this.$modeBehaviours = true;
     this.setBehavioursEnabled = function (enabled) {
         this.$modeBehaviours = enabled;
-    };
+    }
 
     this.getBehavioursEnabled = function () {
         return this.$modeBehaviours;
-    };
+    }
 
-    this.remove = function(dir) {
+    this.removeRight = function() {
         if (this.$readOnly)
             return;
 
-        if (this.selection.isEmpty()){
-            if(dir == "left")
-                this.selection.selectLeft();
-            else
-                this.selection.selectRight();
+        if (this.selection.isEmpty()) {
+            this.selection.selectRight();
         }
+        this.session.remove(this.getSelectionRange())
+        this.clearSelection();
+    };
+
+    this.removeLeft = function() {
+        if (this.$readOnly)
+            return;
+
+        if (this.selection.isEmpty())
+            this.selection.selectLeft();
 
         var range = this.getSelectionRange();
         if (this.getBehavioursEnabled()) {
             var session = this.session;
             var state = session.getState(range.start.row);
             var new_range = session.getMode().transformAction(state, 'deletion', this, session, range);
-            if (new_range)
+            if (new_range !== false) {
                 range = new_range;
+            }
         }
 
         this.session.remove(range);
@@ -6622,18 +6203,17 @@ var Editor =function(renderer, session) {
 
         var cursor = this.getCursorPosition();
         var column = cursor.column;
-        if (column === 0)
+        if (column == 0)
             return;
 
         var line = this.session.getLine(cursor.row);
-        var swap, range;
         if (column < line.length) {
-            swap = line.charAt(column) + line.charAt(column-1);
-            range = new Range(cursor.row, column-1, cursor.row, column+1);
+            var swap = line.charAt(column) + line.charAt(column-1);
+            var range = new Range(cursor.row, column-1, cursor.row, column+1)
         }
         else {
-            swap = line.charAt(column-1) + line.charAt(column-2);
-            range = new Range(cursor.row, column-2, cursor.row, column);
+            var swap = line.charAt(column-1) + line.charAt(column-2);
+            var range = new Range(cursor.row, column-2, cursor.row, column)
         }
         this.session.replace(range, swap);
     };
@@ -6677,7 +6257,7 @@ var Editor =function(renderer, session) {
             return;
 
         var state = this.session.getState(this.getCursorPosition().row);
-        var rows = this.$getSelectedRows();
+        var rows = this.$getSelectedRows()
         this.session.getMode().toggleCommentLines(state, this.session, rows.first, rows.last);
     };
 
@@ -6686,12 +6266,11 @@ var Editor =function(renderer, session) {
             return;
 
         var rows = this.$getSelectedRows();
-        var range;
         if (rows.last == 0 || rows.last+1 < this.session.getLength())
-            range = new Range(rows.first, 0, rows.last+1, 0);
+            var range = new Range(rows.first, 0, rows.last+1, 0)
         else
-            range = new Range(
-                rows.first-1, this.session.getLine(rows.first-1).length,
+            var range = new Range(
+                rows.first-1, this.session.getLine(rows.first).length,
                 rows.last, this.session.getLine(rows.last).length
             );
         this.session.remove(range);
@@ -6775,6 +6354,7 @@ var Editor =function(renderer, session) {
     this.onCompositionEnd = function() {
         this.renderer.hideComposition();
     };
+
 
     this.getFirstVisibleRow = function() {
         return this.renderer.getFirstVisibleRow();
@@ -6906,7 +6486,7 @@ var Editor =function(renderer, session) {
         if (!this.isRowVisible(this.getCursorPosition().row)) {
             this.scrollToLine(lineNumber, true);
         }
-    };
+    },
 
     this.navigateTo = function(row, column) {
         this.clearSelection();
@@ -6994,7 +6574,7 @@ var Editor =function(renderer, session) {
         this.$tryReplace(range, replacement);
         if (range !== null)
             this.selection.setSelectionRange(range);
-    };
+    },
 
     this.replaceAll = function(replacement, options) {
         if (options) {
@@ -7015,11 +6595,11 @@ var Editor =function(renderer, session) {
 
         this.selection.setSelectionRange(selection);
         this.$blockScrolling -= 1;
-    };
+    },
 
     this.$tryReplace = function(range, replacement) {
         var input = this.session.getTextRange(range);
-        replacement = this.$search.replace(input, replacement);
+        var replacement = this.$search.replace(input, replacement);
         if (replacement !== null) {
             range.end = this.session.replace(range, replacement);
             return range;
@@ -7038,7 +6618,7 @@ var Editor =function(renderer, session) {
         options.needle = needle;
         this.$search.set(options);
         this.$find();
-    };
+    },
 
     this.findNext = function(options) {
         options = options || {};
@@ -7081,7 +6661,7 @@ var Editor =function(renderer, session) {
 
     this.destroy = function() {
         this.renderer.destroy();
-    };
+    }
 
 }).call(Editor.prototype);
 
@@ -7136,9 +6716,6 @@ var dom = require("pilot/dom");
 var TextInput = function(parentNode, host) {
 
     var text = dom.createElement("textarea");
-    if (useragent.isTouchPad)
-    	text.setAttribute("x-palm-disable-auto-cap", true);
-        
     text.style.left = "-10000px";
     parentNode.appendChild(text);
 
@@ -7149,12 +6726,6 @@ var TextInput = function(parentNode, host) {
     var copied = false;
     var pasted = false;
     var tempStyle = '';
-
-    function select() {
-        try {
-            text.select();
-        } catch (e) {}
-    }
 
     function sendText(valueToSend) {
         if (!copied) {
@@ -7181,7 +6752,7 @@ var TextInput = function(parentNode, host) {
 
         // Safari doesn't fire copy events if no text is selected
         text.value = PLACEHOLDER;
-        select();
+        text.select();
     }
 
     var onTextInput = function(e) {
@@ -7191,8 +6762,8 @@ var TextInput = function(parentNode, host) {
         }, 0);
     };
     
-    var onPropertyChange = function(e) {
-        if (useragent.isOldIE && text.value.charCodeAt(0) > 128) return;
+    var onKeyPress = function(e) {
+        if (useragent.isIE && text.value.charCodeAt(0) > 128) return;
         setTimeout(function() {
             if (!inCompostion)
                 sendText();
@@ -7222,12 +6793,12 @@ var TextInput = function(parentNode, host) {
             text.value = copyText;
         else
             e.preventDefault();
-        select();
+        text.select();
         setTimeout(function () {
             sendText();
         }, 0);
     };
-    
+
     var onCut = function(e) {
         copied = true;
         var copyText = host.getCopyText();
@@ -7236,29 +6807,40 @@ var TextInput = function(parentNode, host) {
             host.onCut();
         } else
             e.preventDefault();
-        select();
+        text.select();
         setTimeout(function () {
             sendText();
         }, 0);
     };
 
     event.addCommandKeyListener(text, host.onCommandKey.bind(host));
-    if (useragent.isOldIE) {
+    if (useragent.isIE) {
         var keytable = { 13:1, 27:1 };
         event.addListener(text, "keyup", function (e) {
             if (inCompostion && (!text.value || keytable[e.keyCode]))
                 setTimeout(onCompositionEnd, 0);
             if ((text.value.charCodeAt(0)|0) < 129) {
                 return;
-            }
+            };
             inCompostion ? onCompositionUpdate() : onCompositionStart();
         });
+    };
+
+    if (text.attachEvent) {
+        // Old IE + Opera
+        event.addListener(text, "propertychange", onKeyPress);
+    }
+    else {
+        if (useragent.isChrome || useragent.isSafari)
+            event.addListener(text, "textInput", onTextInput);
+        else if (useragent.isIE)
+            // IE9
+            event.addListener(text, "textinput", onTextInput);
+        else
+            // All browsers except old IE
+            event.addListener(text, "input", onTextInput);
     }
     
-    if ("onpropertychange" in text && !("oninput" in text))
-        event.addListener(text, "propertychange", onPropertyChange);
-    else
-        event.addListener(text, "input", onTextInput);
     
     event.addListener(text, "paste", function(e) {
         // Mark that the next input text comes from past.
@@ -7272,11 +6854,11 @@ var TextInput = function(parentNode, host) {
         else {
             // If a browser doesn't support any of the things above, use the regular
             // method to detect the pasted input.
-            onPropertyChange();
+            onKeyPress();
         }
     });
 
-    if ("onbeforecopy" in text && typeof clipboardData !== "undefined") {
+    if (useragent.isIE) {
         event.addListener(text, "beforecopy", function(e) {
             var copyText = host.getCopyText();
             if(copyText)
@@ -7315,12 +6897,12 @@ var TextInput = function(parentNode, host) {
 
     event.addListener(text, "focus", function() {
         host.onFocus();
-        select();
+        text.select();
     });
 
     this.focus = function() {
         host.onFocus();
-        select();
+        text.select();
         text.focus();
     };
 
@@ -7401,16 +6983,23 @@ exports.TextInput = TextInput;
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/mouse/mouse_handler', ['require', 'exports', 'module' , 'pilot/event', 'ace/mouse/default_handlers', 'ace/mouse/mouse_event'], function(require, exports, module) {
+define('ace/mouse_handler', ['require', 'exports', 'module' , 'pilot/event', 'pilot/dom', 'pilot/browser_focus'], function(require, exports, module) {
 
 var event = require("pilot/event");
-var DefaultHandlers = require("ace/mouse/default_handlers").DefaultHandlers;
-var MouseEvent = require("ace/mouse/mouse_event").MouseEvent;
+var dom = require("pilot/dom");
+var BrowserFocus = require("pilot/browser_focus").BrowserFocus;
+
+var STATE_UNKNOWN = 0;
+var STATE_SELECT = 1;
+var STATE_DRAG = 2;
+
+var DRAG_TIMER = 250; // milliseconds
+var DRAG_OFFSET = 5; // pixels
 
 var MouseHandler = function(editor) {
     this.editor = editor;
     
-    this.defaultHandlers = new DefaultHandlers(editor);
+    this.browserFocus = new BrowserFocus();
     event.addListener(editor.container, "mousedown", function(e) {
         editor.focus();
         return event.preventDefault(e);
@@ -7421,11 +7010,10 @@ var MouseHandler = function(editor) {
 
     var mouseTarget = editor.renderer.getMouseEventTarget();
     event.addListener(mouseTarget, "mousedown", this.onMouseDown.bind(this));
-    event.addListener(mouseTarget, "mousemove", this.onMouseMove.bind(this));
     event.addMultiMouseDownListener(mouseTarget, 0, 2, 500, this.onMouseDoubleClick.bind(this));
     event.addMultiMouseDownListener(mouseTarget, 0, 3, 600, this.onMouseTripleClick.bind(this));
     event.addMultiMouseDownListener(mouseTarget, 0, 4, 600, this.onMouseQuadClick.bind(this));
-    event.addMouseWheelListener(editor.container, this.onMouseWheel.bind(this));
+    event.addMouseWheelListener(mouseTarget, this.onMouseWheel.bind(this));
 };
 
 (function() {
@@ -7439,137 +7027,39 @@ var MouseHandler = function(editor) {
         return this.$scrollSpeed;
     };
 
+    this.$getEventPosition = function(e) {
+        var pageX = event.getDocumentX(e);
+        var pageY = event.getDocumentY(e);
+        var pos = this.editor.renderer.screenToTextCoordinates(pageX, pageY);
+        pos.row = Math.max(0, Math.min(pos.row, this.editor.session.getLength()-1));
+        return pos;
+    };
+
+    this.$distance = function(ax, ay, bx, by) {
+        return Math.sqrt(Math.pow(bx - ax, 2) + Math.pow(by - ay, 2));
+    };
+
     this.onMouseDown = function(e) {
-        this.editor._dispatchEvent("mousedown", new MouseEvent(e, this.editor));
-    };
-    
-    this.onMouseMove = function(e) {
-        // optimization, because mousemove doesn't have a default handler.
-        var listeners = this.editor._eventRegistry && this.editor._eventRegistry["mousemove"];
-        if (!listeners || !listeners.length)
+        // if this click caused the editor to be focused ignore the click
+        // for selection and cursor placement
+        if (
+            !this.browserFocus.isFocused()
+            || new Date().getTime() - this.browserFocus.lastFocus < 20
+            || !this.editor.isFocused()
+        )
             return;
-
-        this.editor._dispatchEvent("mousemove", new MouseEvent(e, this.editor));
-    };
-
-    this.onMouseDoubleClick = function(e) {
-        this.editor._dispatchEvent("dblclick", new MouseEvent(e, this.editor));
-    };
-
-    this.onMouseTripleClick = function(e) {
-        this.editor._dispatchEvent("tripleclick", new MouseEvent(e, this.editor));
-    };
-
-    this.onMouseQuadClick = function(e) {
-        this.editor._dispatchEvent("quadclick", new MouseEvent(e, this.editor));
-    };
-
-    this.onMouseWheel = function(e) {
-        var mouseEvent = new MouseEvent(e, this.editor);
-        mouseEvent.speed = this.$scrollSpeed * 2;
-        mouseEvent.wheelX = e.wheelX;
-        mouseEvent.wheelY = e.wheelY;
         
-        this.editor._dispatchEvent("mousewheel", mouseEvent);
-    };
-
-}).call(MouseHandler.prototype);
-
-exports.MouseHandler = MouseHandler;
-});
-/* vim:ts=4:sts=4:sw=4:
- * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Ajax.org Code Editor (ACE).
- *
- * The Initial Developer of the Original Code is
- * Ajax.org B.V.
- * Portions created by the Initial Developer are Copyright (C) 2010
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *      Fabian Jakobs <fabian AT ajax DOT org>
- *      Mike de Boer <mike AT ajax DOT org>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
-define('ace/mouse/default_handlers', ['require', 'exports', 'module' , 'pilot/event', 'pilot/dom', 'pilot/event_emitter', 'pilot/browser_focus'], function(require, exports, module) {
-
-var event = require("pilot/event");
-var dom = require("pilot/dom");
-var EventEmitter = require("pilot/event_emitter").EventEmitter;
-var BrowserFocus = require("pilot/browser_focus").BrowserFocus;
-
-var STATE_UNKNOWN = 0;
-var STATE_SELECT = 1;
-var STATE_DRAG = 2;
-
-var DRAG_TIMER = 250; // milliseconds
-var DRAG_OFFSET = 5; // pixels
-
-function DefaultHandlers(editor) {
-    this.editor = editor;
-    this.$clickSelection = null;
-    this.browserFocus = new BrowserFocus();
-
-    editor.setDefaultHandler("mousedown", this.onMouseDown.bind(this));
-    editor.setDefaultHandler("dblclick", this.onDoubleClick.bind(this));
-    editor.setDefaultHandler("tripleclick", this.onTripleClick.bind(this));
-    editor.setDefaultHandler("quadclick", this.onQuadClick.bind(this));
-    editor.setDefaultHandler("mousewheel", this.onScroll.bind(this));
-}
-
-(function() {
-    
-    this.onMouseDown = function(ev) {
-        var inSelection = ev.inSelection();
-        var pageX = ev.pageX;
-        var pageY = ev.pageY;
-        var pos = ev.getDocumentPosition();
+        var pageX = event.getDocumentX(e);
+        var pageY = event.getDocumentY(e);
+        var pos = this.$getEventPosition(e);
         var editor = this.editor;
-        var _self = this;
-        
+        var self = this;
         var selectionRange = editor.getSelectionRange();
         var selectionEmpty = selectionRange.isEmpty();
         var state = STATE_UNKNOWN;
-        
-        // if this click caused the editor to be focused should not clear the
-        // selection
-        if (
-            inSelection && (
-                !this.browserFocus.isFocused()
-                || new Date().getTime() - this.browserFocus.lastFocus < 20
-                || !editor.isFocused()
-            )
-        ) {
-            editor.focus();
-            return;
-        }
+        var inSelection = false;
 
-        var button = ev.getButton();
+        var button = event.getButton(e);
         if (button !== 0) {
             if (selectionEmpty) {
                 editor.moveCursorToPosition(pos);
@@ -7579,14 +7069,17 @@ function DefaultHandlers(editor) {
                 event.capture(editor.container, function(){}, editor.textInput.onContextMenuClose);
             }
             return;
-        }
-        else {
+        } else {
             // Select the fold as the user clicks it.
             var fold = editor.session.getFoldAt(pos.row, pos.column, 1);
             if (fold) {
                 editor.selection.setSelectionRange(fold.range);
                 return;
             }
+
+            inSelection = !editor.getReadOnly()
+                && !selectionEmpty
+                && selectionRange.contains(pos.row, pos.column);
         }
 
         if (!inSelection) {
@@ -7595,7 +7088,7 @@ function DefaultHandlers(editor) {
             onStartSelect(pos);
         }
 
-        var mousePageX = pageX, mousePageY = pageY;
+        var mousePageX, mousePageY;
         var overwrite = editor.getOverwrite();
         var mousedownTime = (new Date()).getTime();
         var dragCursor, dragRange;
@@ -7612,7 +7105,7 @@ function DefaultHandlers(editor) {
             else if (state == STATE_DRAG)
                 onMouseDragSelectionEnd();
 
-            _self.$clickSelection = null;
+            self.$clickSelection = null;
             state = STATE_UNKNOWN;
         };
 
@@ -7620,7 +7113,7 @@ function DefaultHandlers(editor) {
             dom.removeCssClass(editor.container, "ace_dragging");
             editor.session.removeMarker(dragSelectionMarker);
 
-            if (!editor.$mouseHandler.$clickSelection) {
+            if (!self.$clickSelection) {
                 if (!dragCursor) {
                     editor.moveCursorToPosition(pos);
                     editor.selection.clearSelection(pos.row, pos.column);
@@ -7646,17 +7139,20 @@ function DefaultHandlers(editor) {
         };
 
         var onSelectionInterval = function() {
+            if (mousePageX === undefined || mousePageY === undefined)
+                return;
+
             if (state == STATE_UNKNOWN) {
-                var distance = calcDistance(pageX, pageY, mousePageX, mousePageY);
+                var distance = self.$distance(pageX, pageY, mousePageX, mousePageY);
                 var time = (new Date()).getTime();
+
 
                 if (distance > DRAG_OFFSET) {
                     state = STATE_SELECT;
                     var cursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
                     cursor.row = Math.max(0, Math.min(cursor.row, editor.session.getLength()-1));
                     onStartSelect(cursor);
-                }
-                else if ((time - mousedownTime) > DRAG_TIMER) {
+                } else if ((time - mousedownTime) > DRAG_TIMER) {
                     state = STATE_DRAG;
                     dragRange = editor.getSelectionRange();
                     var style = editor.getSelectionStyle();
@@ -7674,11 +7170,10 @@ function DefaultHandlers(editor) {
         };
 
         function onStartSelect(pos) {
-            if (ev.getShiftKey()) {
-                editor.selection.selectToPosition(pos);
-            }
+            if (e.shiftKey)
+                editor.selection.selectToPosition(pos)
             else {
-                if (!_self.$clickSelection) {
+                if (!self.$clickSelection) {
                     editor.moveCursorToPosition(pos);
                     editor.selection.clearSelection(pos.row, pos.column);
                 }
@@ -7687,20 +7182,17 @@ function DefaultHandlers(editor) {
         }
 
         var onUpdateSelectionInterval = function() {
-            var anchor;
             var cursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
             cursor.row = Math.max(0, Math.min(cursor.row, editor.session.getLength()-1));
 
-            if (_self.$clickSelection) {
-                if (_self.$clickSelection.contains(cursor.row, cursor.column)) {
-                    editor.selection.setSelectionRange(_self.$clickSelection);
-                }
-                else {
-                    if (_self.$clickSelection.compare(cursor.row, cursor.column) == -1) {
-                        anchor = _self.$clickSelection.end;
-                    }
-                    else {
-                        anchor = _self.$clickSelection.start;
+            if (self.$clickSelection) {
+                if (self.$clickSelection.contains(cursor.row, cursor.column)) {
+                    editor.selection.setSelectionRange(self.$clickSelection);
+                } else {
+                    if (self.$clickSelection.compare(cursor.row, cursor.column) == -1) {
+                        var anchor = self.$clickSelection.end;
+                    } else {
+                        var anchor = self.$clickSelection.start;
                     }
                     editor.selection.setSelectionAnchor(anchor.row, anchor.column);
                     editor.selection.selectToPosition(cursor);
@@ -7715,7 +7207,8 @@ function DefaultHandlers(editor) {
 
         var onDragSelectionInterval = function() {
             dragCursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
-            dragCursor.row = Math.max(0, Math.min(dragCursor.row, editor.session.getLength() - 1));
+            dragCursor.row = Math.max(0, Math.min(dragCursor.row,
+                                                  editor.session.getLength() - 1));
 
             editor.moveCursorToPosition(dragCursor);
         };
@@ -7723,57 +7216,47 @@ function DefaultHandlers(editor) {
         event.capture(editor.container, onMouseSelection, onMouseSelectionEnd);
         var timerId = setInterval(onSelectionInterval, 20);
 
-        return ev.preventDefault();
+        return event.preventDefault(e);
     };
-    
-    this.onDoubleClick = function(ev) {
-        var pos = ev.getDocumentPosition();
+
+    this.onMouseDoubleClick = function(e) {
         var editor = this.editor;
-        
+        var pos = this.$getEventPosition(e);
+
         // If the user dclicked on a fold, then expand it.
         var fold = editor.session.getFoldAt(pos.row, pos.column, 1);
         if (fold) {
             editor.session.expandFold(fold);
-        }
-        else {
+        } else {
             editor.moveCursorToPosition(pos);
             editor.selection.selectWord();
             this.$clickSelection = editor.getSelectionRange();
         }
     };
-    
-    this.onTripleClick = function(ev) {
-        var pos = ev.getDocumentPosition();
-        var editor = this.editor;
-        
-        editor.moveCursorToPosition(pos);
-        editor.selection.selectLine();
-        this.$clickSelection = editor.getSelectionRange();
-    };
-    
-    this.onQuadClick = function(ev) {
-        var editor = this.editor;
-        
-        editor.selectAll();
-        this.$clickSelection = editor.getSelectionRange();
-    };
-    
-    this.onScroll = function(ev) {
-        var editor = this.editor;
-        
-        editor.renderer.scrollBy(ev.wheelX * ev.speed, ev.wheelY * ev.speed);
-        if (editor.renderer.isScrollableBy(ev.wheelX * ev.speed, ev.wheelY * ev.speed))
-            return ev.preventDefault();
-    };
-    
-}).call(DefaultHandlers.prototype);
 
-exports.DefaultHandlers = DefaultHandlers;
+    this.onMouseTripleClick = function(e) {
+        var pos = this.$getEventPosition(e);
+        this.editor.moveCursorToPosition(pos);
+        this.editor.selection.selectLine();
+        this.$clickSelection = this.editor.getSelectionRange();
+    };
 
-function calcDistance(ax, ay, bx, by) {
-    return Math.sqrt(Math.pow(bx - ax, 2) + Math.pow(by - ay, 2));
-}
+    this.onMouseQuadClick = function(e) {
+        this.editor.selectAll();
+        this.$clickSelection = this.editor.getSelectionRange();
+    };
 
+    this.onMouseWheel = function(e) {
+        var speed = this.$scrollSpeed * 2;
+
+        this.editor.renderer.scrollBy(e.wheelX * speed, e.wheelY * speed);
+        return event.preventDefault(e);
+    };
+
+
+}).call(MouseHandler.prototype);
+
+exports.MouseHandler = MouseHandler;
 });
 /* vim:ts=4:sts=4:sw=4:
  * ***** BEGIN LICENSE BLOCK *****
@@ -7833,26 +7316,13 @@ var BrowserFocus = function(win) {
     this._isFocused = true;
     
     var _self = this;
+    event.addListener(win, "blur", function(e) {
+        _self._setFocused(false);
+    });
 
-    // IE < 9 supports focusin and focusout events
-    if ("onfocusin" in win.document) {
-        event.addListener(win.document, "focusin", function(e) {
-            _self._setFocused(true);
-        });
-
-        event.addListener(win.document, "focusout", function(e) {
-            _self._setFocused(!!e.toElement);
-        });
-    }
-    else {
-        event.addListener(win, "blur", function(e) {
-            _self._setFocused(false);
-        });
-
-        event.addListener(win, "focus", function(e) {
-            _self._setFocused(true);
-        });
-    }
+    event.addListener(win, "focus", function(e) {
+        _self._setFocused(true);
+    });
 };
 
 (function(){
@@ -7879,139 +7349,7 @@ var BrowserFocus = function(win) {
 
 exports.BrowserFocus = BrowserFocus;
 });
-/* vim:ts=4:sts=4:sw=4:
- * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Ajax.org Code Editor (ACE).
- *
- * The Initial Developer of the Original Code is
- * Ajax.org B.V.
- * Portions created by the Initial Developer are Copyright (C) 2010
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *      Fabian Jakobs <fabian AT ajax DOT org>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
-define('ace/mouse/mouse_event', ['require', 'exports', 'module' , 'pilot/event', 'pilot/dom'], function(require, exports, module) {
-
-var event = require("pilot/event");
-var dom = require("pilot/dom");
-
-/**
- * Custom Ace mouse event
- */
-var MouseEvent = exports.MouseEvent = function(domEvent, editor) {
-    this.domEvent = domEvent;
-    this.editor = editor;
-    
-    this.pageX = event.getDocumentX(domEvent);
-    this.pageY = event.getDocumentY(domEvent);
-    
-    this.$pos = null;
-    this.$inSelection = null;
-    
-    this.propagationStopped = false;
-    this.defaultPrevented = false;
-};
-
-(function() {  
-    
-    this.stopPropagation = function() {
-        event.stopPropagation(this.domEvent);
-        this.propagationStopped = true;
-    };
-    
-    this.preventDefault = function() {
-        event.preventDefault(this.domEvent);
-        this.defaultPrevented = true;
-    };
-
-    /**
-     * Get the document position below the mouse cursor
-     * 
-     * @return {Object} 'row' and 'column' of the document position
-     */
-    this.getDocumentPosition = function() {
-        if (this.$pos)
-            return this.$pos;
-            
-        var pageX = event.getDocumentX(this.domEvent);
-        var pageY = event.getDocumentY(this.domEvent);
-        this.$pos = this.editor.renderer.screenToTextCoordinates(pageX, pageY);
-        this.$pos.row = Math.max(0, Math.min(this.$pos.row, this.editor.session.getLength()-1));
-        return this.$pos;
-    };
-    
-    /**
-     * Check if the mouse cursor is inside of the text selection
-     * 
-     * @return {Boolean} whether the mouse cursor is inside of the selection
-     */
-    this.inSelection = function() {
-        if (this.$inSelection !== null)
-            return this.$inSelection;
-            
-        var editor = this.editor;
-        
-        if (editor.getReadOnly()) {
-            this.$inSelection = false;
-        }
-        else {
-            var selectionRange = editor.getSelectionRange();
-            if (selectionRange.isEmpty())
-                this.$inSelection = false;
-            else {
-                var pos = this.getDocumentPosition();
-                this.$inSelection = selectionRange.contains(pos.row, pos.column);
-            }
-        }
-        return this.$inSelection;
-    };
-    
-    /**
-     * Get the clicked mouse button
-     * 
-     * @return {Number} 0 for left button, 1 for middle button, 2 for right button
-     */
-    this.getButton = function() {
-        return event.getButton(this.domEvent);
-    };
-    
-    /**
-     * @return {Boolean} whether the shift key was pressed when the event was emitted
-     */
-    this.getShiftKey = function() {
-        return this.domEvent.shiftKey;
-    };
-    
-}).call(MouseEvent.prototype);
-
-});/* ***** BEGIN LICENSE BLOCK *****
+/* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -8225,7 +7563,7 @@ canon.addCommand({
     name: "find",
     bindKey: bindKey("Ctrl-F", "Command-F"),
     exec: function(env, args, request) {
-        var needle = prompt("Find:", env.editor.getCopyText());
+        var needle = prompt("Find:");
         env.editor.find(needle);
     }
 });
@@ -8233,7 +7571,7 @@ canon.addCommand({
     name: "replace",
     bindKey: bindKey("Ctrl-R", "Command-Option-F"),
     exec: function(env, args, request) {
-        var needle = prompt("Find:", env.editor.getCopyText());
+        var needle = prompt("Find:");
         if (!needle)
             return;
         var replacement = prompt("Replacement:");
@@ -8433,7 +7771,7 @@ canon.addCommand({
 canon.addCommand({
     name: "del",
     bindKey: bindKey("Delete", "Delete|Ctrl-D"),
-    exec: function(env, args, request) { env.editor.remove("right"); }
+    exec: function(env, args, request) { env.editor.removeRight(); }
 });
 canon.addCommand({
     name: "backspace",
@@ -8441,16 +7779,16 @@ canon.addCommand({
         "Ctrl-Backspace|Command-Backspace|Option-Backspace|Shift-Backspace|Backspace",
         "Ctrl-Backspace|Command-Backspace|Shift-Backspace|Backspace|Ctrl-H"
     ),
-    exec: function(env, args, request) { env.editor.remove("left"); }
+    exec: function(env, args, request) { env.editor.removeLeft(); }
 });
 canon.addCommand({
     name: "removetolinestart",
-    bindKey: bindKey("Alt-Backspace", "Option-Backspace"),
+    bindKey: bindKey(null, "Option-Backspace"),
     exec: function(env, args, request) { env.editor.removeToLineStart(); }
 });
 canon.addCommand({
     name: "removetolineend",
-    bindKey: bindKey("Alt-Delete", "Ctrl-K"),
+    bindKey: bindKey(null, "Ctrl-K"),
     exec: function(env, args, request) { env.editor.removeToLineEnd(); }
 });
 canon.addCommand({
@@ -8460,7 +7798,7 @@ canon.addCommand({
 });
 canon.addCommand({
     name: "removewordright",
-    bindKey: bindKey("Ctrl-Delete", "Alt-Delete"),
+    bindKey: bindKey(null, "Alt-Delete"),
     exec: function(env, args, request) { env.editor.removeWordRight(); }
 });
 canon.addCommand({
@@ -8495,8 +7833,7 @@ canon.addCommand({
     exec: function(env, args, request) { env.editor.transposeLetters(); }
 });
 
-});
-/* vim:ts=4:sts=4:sw=4:
+});/* vim:ts=4:sts=4:sw=4:
  * ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -8589,11 +7926,6 @@ var EditSession = function(text, mode) {
         this.doc = doc;
         doc.on("change", this.onChange.bind(this));
         this.on("changeFold", this.onChangeFold.bind(this));
-        
-        if (this.bgTokenizer) {
-            this.bgTokenizer.setDocument(this.getDocument());
-            this.bgTokenizer.start(0);
-        }
     };
 
     this.getDocument = function() {
@@ -9334,8 +8666,9 @@ var EditSession = function(text, mode) {
 
     this.indentRows = function(startRow, endRow, indentString) {
         indentString = indentString.replace(/\t/g, this.getTabString());
-        for (var row=startRow; row<=endRow; row++)
+        for (var row=startRow; row<=endRow; row++) {
             this.insert({row: row, column:0}, indentString);
+        }
     };
 
     this.outdentRows = function (range) {
@@ -9519,7 +8852,7 @@ var EditSession = function(text, mode) {
             } else {
                 lastRow = firstRow;
             }
-            len = e.data.lines ? e.data.lines.length : lastRow - firstRow;
+            len = e.data.lines.length;
         } else {
             len = lastRow - firstRow;
         }
@@ -11784,7 +11117,7 @@ var Document = function(text) {
 
 
     this.$detectNewLine = function(text) {
-        var match = text.match(/^.*?(\r\n|\r|\n)/m);
+        var match = text.match(/^.*?(\r?\n)/m);
         if (match) {
             this.$autoNewLine = match[1];
         } else {
@@ -11808,8 +11141,7 @@ var Document = function(text) {
     this.$autoNewLine = "\n";
     this.$newLineMode = "auto";
     this.setNewLineMode = function(newLineMode) {
-        if (this.$newLineMode === newLineMode)
-            return;
+        if (this.$newLineMode === newLineMode) return;
 
         this.$newLineMode = newLineMode;
     };
@@ -13779,7 +13111,7 @@ exports.UndoManager = UndoManager;
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/virtual_renderer', ['require', 'exports', 'module' , 'pilot/oop', 'pilot/dom', 'pilot/event', 'pilot/useragent', 'ace/layer/gutter', 'ace/layer/marker', 'ace/layer/text', 'ace/layer/cursor', 'ace/scrollbar', 'ace/renderloop', 'pilot/event_emitter', 'text!ace/css/editor.css'], function(require, exports, module) {
+define('ace/virtual_renderer', ['require', 'exports', 'module' , 'pilot/oop', 'pilot/dom', 'pilot/event', 'pilot/useragent', 'ace/layer/gutter', 'ace/layer/marker', 'ace/layer/text', 'ace/layer/cursor', 'ace/scrollbar', 'ace/renderloop', 'pilot/event_emitter', 'text/ace/css/editor.css'], function(require, exports, module) {
 
 var oop = require("pilot/oop");
 var dom = require("pilot/dom");
@@ -13792,13 +13124,13 @@ var CursorLayer = require("ace/layer/cursor").Cursor;
 var ScrollBar = require("ace/scrollbar").ScrollBar;
 var RenderLoop = require("ace/renderloop").RenderLoop;
 var EventEmitter = require("pilot/event_emitter").EventEmitter;
-var editorCss = require("text!ace/css/editor.css");
+var editorCss = require("text/ace/css/editor.css");
+
+// import CSS once
+dom.importCssString(editorCss);
 
 var VirtualRenderer = function(container, theme) {
     this.container = container;
-
-    // Imports CSS once per DOM document ('ace_editor' serves as an identifier).
-    dom.importCssString(editorCss, "ace_editor", container.ownerDocument);
     dom.addCssClass(this.container, "ace_editor");
 
     this.setTheme(theme);
@@ -13876,10 +13208,7 @@ var VirtualRenderer = function(container, theme) {
         height : 1
     };
 
-    this.$loop = new RenderLoop(
-        this.$renderChanges.bind(this),
-        this.container.ownerDocument.defaultView
-    );
+    this.$loop = new RenderLoop(this.$renderChanges.bind(this));
     this.$loop.schedule(this.CHANGE_FULL);
 
     this.setPadding(4);
@@ -14082,7 +13411,6 @@ var VirtualRenderer = function(container, theme) {
 
     this.moveTextAreaToCursor = function(textarea) {
         // in IE the native cursor always shines through
-        // this persists in IE9
         if (useragent.isIE)
             return;
 
@@ -14377,7 +13705,7 @@ var VirtualRenderer = function(container, theme) {
 
         var pos = this.$cursorLayer.getPixelPosition();
 
-        var left = pos.left;
+        var left = pos.left + this.$padding;
         var top = pos.top;
 
         if (this.scrollTop > top) {
@@ -14455,14 +13783,6 @@ var VirtualRenderer = function(container, theme) {
     this.scrollBy = function(deltaX, deltaY) {
         deltaY && this.scrollToY(this.scrollTop + deltaY);
         deltaX && this.scrollToX(this.scroller.scrollLeft + deltaX);
-    };
-
-    this.isScrollableBy = function(deltaX, deltaY) {
-        if (deltaY < 0 && this.scrollTop > 0)
-           return true;
-        if (deltaY > 0 && this.scrollTop + this.$size.scrollerHeight < this.layerConfig.maxHeight)
-           return true;
-        // todo: handle horizontal scrolling
     };
 
     this.screenToTextCoordinates = function(pageX, pageY) {
@@ -14544,12 +13864,6 @@ var VirtualRenderer = function(container, theme) {
         }
 
         function afterLoad(theme) {
-            dom.importCssString(
-                theme.cssText,
-                theme.cssClass,
-                _self.container.ownerDocument
-            );
-
             if (_self.$theme)
                 dom.removeCssClass(_self.container, _self.$theme);
 
@@ -14718,7 +14032,7 @@ var Gutter = function(parentEl) {
 
             var wrappedRowLength = this.session.getRowLength(i) - 1;
             while (wrappedRowLength--) {
-                html.push("</div><div class='ace_gutter-cell' style='height:", config.lineHeight, "px'>\xA6");
+                html.push("</div><div class='ace_gutter-cell' style='height:", config.lineHeight, "px'>&brvbar;</div>");
             }
 
             html.push("</div>");
@@ -14977,7 +14291,6 @@ exports.Marker = Marker;
  *      Fabian Jakobs <fabian AT ajax DOT org>
  *      Julian Viereck <julian DOT viereck AT gmail DOT com>
  *      Mihai Sucan <mihai.sucan@gmail.com>
- *      Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -15015,10 +14328,10 @@ var Text = function(parentEl) {
 
     oop.implement(this, EventEmitter);
 
-    this.EOF_CHAR = "\xB6"; //"&para;";
-    this.EOL_CHAR = "\xAC"; //"&not;";
-    this.TAB_CHAR = "\u2192"; //"&rarr;";
-    this.SPACE_CHAR = "\xB7"; //"&middot;";
+    this.EOF_CHAR = "&para;";
+    this.EOL_CHAR = "&not;";
+    this.TAB_CHAR = "&rarr;";
+    this.SPACE_CHAR = "&middot;";
     this.$padding = 0;
 
     this.setPadding = function(padding) {
@@ -15076,8 +14389,8 @@ var Text = function(parentEl) {
             // Note: characterWidth can be a float!
             measureNode.innerHTML = lang.stringRepeat("Xy", n);
 
-            if (this.element.ownerDocument.body) {
-                this.element.ownerDocument.body.appendChild(measureNode);
+            if (document.body) {
+                document.body.appendChild(measureNode);
             } else {
                 var container = this.element.parentNode;
                 while (!dom.hasCssClass(container, "ace_editor"))
@@ -15170,7 +14483,7 @@ var Text = function(parentEl) {
 
             var html = [];
             var tokens = this.session.getTokens(i, i);
-            this.$renderLine(html, i, tokens[0].tokens, !this.$useLineGroups());
+            this.$renderLine(html, i, tokens[0].tokens, true);
             lineElement = dom.setInnerHtml(lineElement, html.join(""));
 
             i = this.session.getRowFoldEnd(i);
@@ -15212,7 +14525,7 @@ var Text = function(parentEl) {
     };
 
     this.$renderLinesFragment = function(config, firstRow, lastRow) {
-        var fragment = this.element.ownerDocument.createDocumentFragment(),
+        var fragment = document.createDocumentFragment(),
             row = firstRow,
             fold = this.session.getNextFold(row),
             foldStart = fold ?fold.start.row :Infinity;
@@ -15239,14 +14552,9 @@ var Text = function(parentEl) {
 
             // don't use setInnerHtml since we are working with an empty DIV
             container.innerHTML = html.join("");
-            if (this.$useLineGroups()) {
-                container.className = 'ace_line_group';
-                fragment.appendChild(container);
-            } else {
-                var lines = container.childNodes
-                while(lines.length)
-                    fragment.appendChild(lines[0]);
-            }
+            var lines = container.childNodes
+            while(lines.length)
+                fragment.appendChild(lines[0]);
 
             row++;
         }
@@ -15273,9 +14581,6 @@ var Text = function(parentEl) {
             if(row > lastRow)
                 break;
 
-            if (this.$useLineGroups())
-                html.push("<div class='ace_line_group'>")
-
             // Get the tokens per line as there might be some lines in between
             // beeing folded.
             // OPTIMIZE: If there is a long block of unfolded lines, just make
@@ -15283,9 +14588,6 @@ var Text = function(parentEl) {
             var tokens = this.session.getTokens(row, row);
             if (tokens.length == 1)
                 this.$renderLine(html, row, tokens[0].tokens, false);
-
-            if (this.$useLineGroups())
-                html.push("</div>"); // end the line group
 
             row++;
         }
@@ -15315,14 +14617,6 @@ var Text = function(parentEl) {
                     return "&amp;";
             } else if (c == "<") {
                 return "&lt;";
-            } else if (c == "\u3000") {
-                // U+3000 is both invisible AND full-width, so must be handled uniquely
-                var classToUse = self.showInvisibles ? "ace_cjk ace_invisible" : "ace_cjk";
-                var space = self.showInvisibles ? self.SPACE_CHAR : "";
-                screenColumn += 1;
-                return "<span class='" + classToUse + "' style='width:" +
-                    (self.config.characterWidth * 2) +
-                    "px'>" + space + "</span>";
             } else if (c.match(/[\v\f \u00a0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u2028\u2029\u3000]/)) {
                 if (self.showInvisibles) {
                     var space = new Array(c.length+1).join(self.SPACE_CHAR);
@@ -15416,8 +14710,7 @@ var Text = function(parentEl) {
             else
                 stringBuilder.push("<span class='ace_invisible'>" + this.EOF_CHAR + "</span>");
         }
-        if (!onlyContents)
-            stringBuilder.push("</div>");
+        stringBuilder.push("</div>");
     };
 
     this.$renderLine = function(stringBuilder, row, tokens, onlyContents) {
@@ -15495,15 +14788,6 @@ var Text = function(parentEl) {
         // TODO: Build a fake splits array!
         var splits = this.session.$useWrapMode?this.session.$wrapData[row]:null;
         this.$renderLineCore(stringBuilder, row, renderTokens, splits, onlyContents);
-    };
-    
-    this.$useLineGroups = function() {
-        // For the updateLines function to work correctly, it's important that the
-        // child nodes of this.element correspond on a 1-to-1 basis to rows in the 
-        // document (as distinct from lines on the screen). For sessions that are
-        // wrapped, this means we need to add a layer to the node hierarchy (tagged
-        // with the class name ace_line_group).
-        return this.session.getUseWrapMode();
     };
 
     this.destroy = function() {
@@ -15686,7 +14970,6 @@ exports.Cursor = Cursor;
  *
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
- *      Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -15721,10 +15004,8 @@ var ScrollBar = function(parent) {
     // in OSX lion the scrollbars appear to have no width. In this case resize
     // the to show the scrollbar but still pretend that the scrollbar has a width
     // of 0px
-    // in Firefox 6+ scrollbar is hidden if element has the same width as scrollbar
-    // make element a little bit wider to retain scrollbar when page is zoomed 
-    this.width = dom.scrollbarWidth(parent.ownerDocument);
-    this.element.style.width = (this.width || 15) + 5 + "px";
+    this.width = dom.scrollbarWidth();
+    this.element.style.width = (this.width || 15) + "px";
 
     event.addListener(this.element, "scroll", this.onScroll.bind(this));
 };
@@ -15778,7 +15059,6 @@ exports.ScrollBar = ScrollBar;
  *
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
- *      Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -15798,11 +15078,10 @@ define('ace/renderloop', ['require', 'exports', 'module' , 'pilot/event'], funct
 
 var event = require("pilot/event");
 
-var RenderLoop = function(onRender, window) {
+var RenderLoop = function(onRender) {
     this.onRender = onRender;
     this.pending = false;
     this.changes = 0;
-    this.setTimeoutZero = this.setTimeoutZero.bind(window);
 };
 
 (function() {
@@ -15830,31 +15109,31 @@ var RenderLoop = function(onRender, window) {
          window.msRequestAnimationFrame;
 
     if (this.setTimeoutZero) {
-        this.setTimeoutZero = this.setTimeoutZero;
+
+        this.setTimeoutZero = this.setTimeoutZero.bind(window)
     } else if (window.postMessage) {
 
-        this.setTimeoutZero = (function(messageName, attached, listener) {
-            return function setTimeoutZero(callback) {
-                // Set up listener if not listening already.
-                if (!attached) {
-                    event.addListener(this, "message", function(e) {
-                        if (listener && e.data == messageName) {
-                            event.stopPropagation(e);
-                            listener();
-                        }
-                    });
-                    attached = true;
-                }
+        this.messageName = "zero-timeout-message";
 
-                listener = callback;
-                this.postMessage(messageName, "*");
-            };
-        })("zero-timeout-message", false, null);
+        this.setTimeoutZero = function(callback) {
+            if (!this.attached) {
+                var _self = this;
+                event.addListener(window, "message", function(e) {
+                    if (_self.callback && e.data == _self.messageName) {
+                        event.stopPropagation(e);
+                        _self.callback();
+                    }
+                });
+                this.attached = true;
+            }
+            this.callback = callback;
+            window.postMessage(this.messageName, "*");
+        }
 
     } else {
 
         this.setTimeoutZero = function(callback) {
-            this.setTimeout(callback, 0);
+            setTimeout(callback, 0);
         }
     }
 
@@ -15899,11 +15178,11 @@ exports.RenderLoop = RenderLoop;
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/theme/textmate', ['require', 'exports', 'module' ], function(require, exports, module) {
+define('ace/theme/textmate', ['require', 'exports', 'module' , 'pilot/dom'], function(require, exports, module) {
 
+    var dom = require("pilot/dom");
 
-exports.cssClass = "ace-tm";
-exports.cssText = ".ace-tm .ace_editor {\
+    var cssText = ".ace-tm .ace_editor {\
   border: 2px solid rgb(159, 159, 159);\
 }\
 \
@@ -16020,22 +15299,6 @@ exports.cssText = ".ace-tm .ace_editor {\
   color: rgb(104, 104, 91);\
 }\
 \
-.ace-tm .ace_entity.ace_name.ace_function {\
-  color: #0000A2;\
-}\
-\
-.ace-tm .ace_markup.ace_markupine {\
-    text-decoration:underline;\
-}\
-\
-.ace-tm .ace_markup.ace_heading {\
-  color: rgb(12, 7, 255);\
-}\
-\
-.ace-tm .ace_markup.ace_list {\
-  color:rgb(185, 6, 144);\
-}\
-\
 .ace-tm .ace_marker-layer .ace_selection {\
   background: rgb(181, 213, 255);\
 }\
@@ -16062,14 +15325,14 @@ exports.cssText = ".ace-tm .ace_editor {\
   border: 1px solid rgb(200, 200, 250);\
 }\
 \
-.ace-tm .ace_meta.ace_tag {\
-  color:rgb(28, 2, 255);\
-}\
-\
 .ace-tm .ace_string.ace_regex {\
   color: rgb(255, 0, 0)\
 }";
 
+    // import CSS once
+    dom.importCssString(cssText);
+
+    exports.cssClass = "ace-tm";
 });
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -16125,1404 +15388,1151 @@ exports.create = create;
 
 
 });
-define("text!ace/css/editor.css", [], "@import url(//fonts.googleapis.com/css?family=Droid+Sans+Mono);\n" +
-  "\n" +
-  "\n" +
-  ".ace_editor {\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    font-family: 'Monaco', 'Menlo', 'Droid Sans Mono', 'Courier New', monospace;\n" +
-  "    font-size: 12px;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_scroller {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: scroll;\n" +
-  "    overflow-y: hidden;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_content {\n" +
-  "    position: absolute;\n" +
-  "    box-sizing: border-box;\n" +
-  "    -moz-box-sizing: border-box;\n" +
-  "    -webkit-box-sizing: border-box;\n" +
-  "    cursor: text;\n" +
-  "}\n" +
-  "\n" +
-  "/* setting pointer-events: auto; on node under the mouse, which changes during scroll,\n" +
-  "  will break mouse wheel scrolling in Safari */\n" +
-  ".ace_content * {\n" +
-  "     pointer-events: none;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_composition {\n" +
-  "    position: absolute;\n" +
-  "    background: #555;\n" +
-  "    color: #DDD;\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: hidden;\n" +
-  "    overflow-y: hidden;\n" +
-  "    height: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter-cell.ace_error {\n" +
-  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%F5or%F5%87%88%F5nr%F4ns%EBmq%F5z%7F%DDJT%DEKS%DFOW%F1Yc%F2ah%CE(7%CE)8%D18E%DD%40M%F2KZ%EBU%60%F4%60m%DCir%C8%16(%C8%19*%CE%255%F1%3FR%F1%3FS%E6%AB%B5%CA%5DI%CEn%5E%F7%A2%9A%C9G%3E%E0a%5B%F7%89%85%F5yy%F6%82%80%ED%82%80%FF%BF%BF%E3%C4%C4%FF%FF%FF%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%25%00%2C%00%00%00%00%10%00%10%00%00%06p%C0%92pH%2C%1A%8F%C8%D2H%93%E1d4%23%E4%88%D3%09mB%1DN%B48%F5%90%40%60%92G%5B%94%20%3E%22%D2%87%24%FA%20%24%C5%06A%00%20%B1%07%02B%A38%89X.v%17%82%11%13q%10%0Fi%24%0F%8B%10%7BD%12%0Ei%09%92%09%0EpD%18%15%24%0A%9Ci%05%0C%18F%18%0B%07%04%01%04%06%A0H%18%12%0D%14%0D%12%A1I%B3%B4%B5IA%00%3B\");\n" +
-  "    background-repeat: no-repeat;\n" +
-  "    background-position: 4px center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter-cell.ace_warning {\n" +
-  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%FF%DBr%FF%DE%81%FF%E2%8D%FF%E2%8F%FF%E4%96%FF%E3%97%FF%E5%9D%FF%E6%9E%FF%EE%C1%FF%C8Z%FF%CDk%FF%D0s%FF%D4%81%FF%D5%82%FF%D5%83%FF%DC%97%FF%DE%9D%FF%E7%B8%FF%CCl%7BQ%13%80U%15%82W%16%81U%16%89%5B%18%87%5B%18%8C%5E%1A%94d%1D%C5%83-%C9%87%2F%C6%84.%C6%85.%CD%8B2%C9%871%CB%8A3%CD%8B5%DC%98%3F%DF%9BB%E0%9CC%E1%A5U%CB%871%CF%8B5%D1%8D6%DB%97%40%DF%9AB%DD%99B%E3%B0p%E7%CC%AE%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%2F%00%2C%00%00%00%00%10%00%10%00%00%06a%C0%97pH%2C%1A%8FH%A1%ABTr%25%87%2B%04%82%F4%7C%B9X%91%08%CB%99%1C!%26%13%84*iJ9(%15G%CA%84%14%01%1A%97%0C%03%80%3A%9A%3E%81%84%3E%11%08%B1%8B%20%02%12%0F%18%1A%0F%0A%03'F%1C%04%0B%10%16%18%10%0B%05%1CF%1D-%06%07%9A%9A-%1EG%1B%A0%A1%A0U%A4%A5%A6BA%00%3B\");\n" +
-  "    background-repeat: no-repeat;\n" +
-  "    background-position: 4px center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_sb {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: hidden;\n" +
-  "    overflow-y: scroll;\n" +
-  "    right: 0;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_sb div {\n" +
-  "    position: absolute;\n" +
-  "    width: 1px;\n" +
-  "    left: 0;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_print_margin_layer {\n" +
-  "    z-index: 0;\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    margin: 0;\n" +
-  "    left: 0;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_print_margin {\n" +
-  "    position: absolute;\n" +
-  "    height: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor textarea {\n" +
-  "    position: fixed;\n" +
-  "    z-index: -1;\n" +
-  "    width: 10px;\n" +
-  "    height: 30px;\n" +
-  "    opacity: 0;\n" +
-  "    background: transparent;\n" +
-  "    appearance: none;\n" +
-  "    -moz-appearance: none;\n" +
-  "    border: none;\n" +
-  "    resize: none;\n" +
-  "    outline: none;\n" +
-  "    overflow: hidden;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_layer {\n" +
-  "    z-index: 1;\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    white-space: nowrap;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_text-layer {\n" +
-  "    color: black;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cjk {\n" +
-  "    display: inline-block;\n" +
-  "    text-align: center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor-layer {\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor {\n" +
-  "    z-index: 4;\n" +
-  "    position: absolute;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor.ace_hidden {\n" +
-  "    opacity: 0.2;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_line {\n" +
-  "    white-space: nowrap;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_step {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 3;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_selection {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_bracket {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 5;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_active_line {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 2;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_selected_word {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 6;\n" +
-  "    box-sizing: border-box;\n" +
-  "    -moz-box-sizing: border-box;\n" +
-  "    -webkit-box-sizing: border-box;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_line .ace_fold {\n" +
-  "    cursor: pointer;\n" +
-  "     pointer-events: auto;\n" +
-  "     color: darkred;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_fold:hover{\n" +
-  "    background: gold!important;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_dragging .ace_content {\n" +
-  "  cursor: move;\n" +
-  "}\n" +
+define("text/cockpit/ui/request_view.css", [], "" +
+  ".cptRowIn {" +
+  "  display: box; display: -moz-box; display: -webkit-box;" +
+  "  box-orient: horizontal; -moz-box-orient: horizontal; -webkit-box-orient: horizontal;" +
+  "  box-align: center; -moz-box-align: center; -webkit-box-align: center;" +
+  "  color: #333;" +
+  "  background-color: #EEE;" +
+  "  width: 100%;" +
+  "  font-family: consolas, courier, monospace;" +
+  "}" +
+  ".cptRowIn > * { padding-left: 2px; padding-right: 2px; }" +
+  ".cptRowIn > img { cursor: pointer; }" +
+  ".cptHover { display: none; }" +
+  ".cptRowIn:hover > .cptHover { display: block; }" +
+  ".cptRowIn:hover > .cptHover.cptHidden { display: none; }" +
+  ".cptOutTyped {" +
+  "  box-flex: 1; -moz-box-flex: 1; -webkit-box-flex: 1;" +
+  "  font-weight: bold; color: #000; font-size: 120%;" +
+  "}" +
+  ".cptRowOutput { padding-left: 10px; line-height: 1.2em; }" +
+  ".cptRowOutput strong," +
+  ".cptRowOutput b," +
+  ".cptRowOutput th," +
+  ".cptRowOutput h1," +
+  ".cptRowOutput h2," +
+  ".cptRowOutput h3 { color: #000; }" +
+  ".cptRowOutput a { font-weight: bold; color: #666; text-decoration: none; }" +
+  ".cptRowOutput a: hover { text-decoration: underline; cursor: pointer; }" +
+  ".cptRowOutput input[type=password]," +
+  ".cptRowOutput input[type=text]," +
+  ".cptRowOutput textarea {" +
+  "  color: #000; font-size: 120%;" +
+  "  background: transparent; padding: 3px;" +
+  "  border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;" +
+  "}" +
+  ".cptRowOutput table," +
+  ".cptRowOutput td," +
+  ".cptRowOutput th { border: 0; padding: 0 2px; }" +
+  ".cptRowOutput .right { text-align: right; }" +
   "");
 
-define("text!build/demo/styles.css", [], "html {\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    overflow: hidden;\n" +
-  "}\n" +
-  "\n" +
-  "body {\n" +
-  "    overflow: hidden;\n" +
-  "    margin: 0;\n" +
-  "    padding: 0;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;\n" +
-  "    font-size: 12px;\n" +
-  "    background: rgb(14, 98, 165);\n" +
-  "    color: white;\n" +
-  "}\n" +
-  "\n" +
-  "#logo {\n" +
-  "    padding: 15px;\n" +
-  "    margin-left: 70px;\n" +
-  "}\n" +
-  "\n" +
-  "#editor {\n" +
-  "    position: absolute;\n" +
-  "    top:  0px;\n" +
-  "    left: 300px;\n" +
-  "    bottom: 0px;\n" +
-  "    right: 0px;\n" +
-  "    background: white;\n" +
-  "}\n" +
-  "\n" +
-  "#controls {\n" +
-  "    padding: 5px;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td {\n" +
-  "    text-align: right;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td + td {\n" +
-  "    text-align: left;\n" +
+define("text/cockpit/ui/cli_view.css", [], "" +
+  "#cockpitInput { padding-left: 16px; }" +
+  "" +
+  ".cptOutput { overflow: auto; position: absolute; z-index: 999; display: none; }" +
+  "" +
+  ".cptCompletion { padding: 0; position: absolute; z-index: -1000; }" +
+  ".cptCompletion.VALID { background: #FFF; }" +
+  ".cptCompletion.INCOMPLETE { background: #DDD; }" +
+  ".cptCompletion.INVALID { background: #DDD; }" +
+  ".cptCompletion span { color: #FFF; }" +
+  ".cptCompletion span.INCOMPLETE { color: #DDD; border-bottom: 2px dotted #F80; }" +
+  ".cptCompletion span.INVALID { color: #DDD; border-bottom: 2px dotted #F00; }" +
+  "span.cptPrompt { color: #66F; font-weight: bold; }" +
+  "" +
+  "" +
+  ".cptHints {" +
+  "  color: #000;" +
+  "  position: absolute;" +
+  "  border: 1px solid rgba(230, 230, 230, 0.8);" +
+  "  background: rgba(250, 250, 250, 0.8);" +
+  "  -moz-border-radius-topleft: 10px;" +
+  "  -moz-border-radius-topright: 10px;" +
+  "  border-top-left-radius: 10px; border-top-right-radius: 10px;" +
+  "  z-index: 1000;" +
+  "  padding: 8px;" +
+  "  display: none;" +
+  "}" +
+  "" +
+  ".cptFocusPopup { display: block; }" +
+  ".cptFocusPopup.cptNoPopup { display: none; }" +
+  "" +
+  ".cptHints ul { margin: 0; padding: 0 15px; }" +
+  "" +
+  ".cptGt { font-weight: bold; font-size: 120%; }" +
+  "");
+
+define("text/ace/css/editor.css", [], ".ace_editor {" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    font-family: Monaco, \"Menlo\", \"Courier New\", monospace;" +
+  "    font-size: 12px;" +
+  "}" +
+  "" +
+  ".ace_scroller {" +
+  "    position: absolute;" +
+  "    overflow-x: scroll;" +
+  "    overflow-y: hidden;" +
+  "}" +
+  "" +
+  ".ace_content {" +
+  "    position: absolute;" +
+  "    box-sizing: border-box;" +
+  "    -moz-box-sizing: border-box;" +
+  "    -webkit-box-sizing: border-box;" +
+  "}" +
+  "" +
+  ".ace_composition {" +
+  "    position: absolute;" +
+  "    background: #555;" +
+  "    color: #DDD;" +
+  "    z-index: 4;" +
+  "}" +
+  "" +
+  ".ace_gutter {" +
+  "    position: absolute;" +
+  "    overflow-x: hidden;" +
+  "    overflow-y: hidden;" +
+  "    height: 100%;" +
+  "}" +
+  "" +
+  ".ace_gutter-cell.ace_error {" +
+  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%F5or%F5%87%88%F5nr%F4ns%EBmq%F5z%7F%DDJT%DEKS%DFOW%F1Yc%F2ah%CE(7%CE)8%D18E%DD%40M%F2KZ%EBU%60%F4%60m%DCir%C8%16(%C8%19*%CE%255%F1%3FR%F1%3FS%E6%AB%B5%CA%5DI%CEn%5E%F7%A2%9A%C9G%3E%E0a%5B%F7%89%85%F5yy%F6%82%80%ED%82%80%FF%BF%BF%E3%C4%C4%FF%FF%FF%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%25%00%2C%00%00%00%00%10%00%10%00%00%06p%C0%92pH%2C%1A%8F%C8%D2H%93%E1d4%23%E4%88%D3%09mB%1DN%B48%F5%90%40%60%92G%5B%94%20%3E%22%D2%87%24%FA%20%24%C5%06A%00%20%B1%07%02B%A38%89X.v%17%82%11%13q%10%0Fi%24%0F%8B%10%7BD%12%0Ei%09%92%09%0EpD%18%15%24%0A%9Ci%05%0C%18F%18%0B%07%04%01%04%06%A0H%18%12%0D%14%0D%12%A1I%B3%B4%B5IA%00%3B\");" +
+  "    background-repeat: no-repeat;" +
+  "    background-position: 4px center;" +
+  "}" +
+  "" +
+  ".ace_gutter-cell.ace_warning {" +
+  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%FF%DBr%FF%DE%81%FF%E2%8D%FF%E2%8F%FF%E4%96%FF%E3%97%FF%E5%9D%FF%E6%9E%FF%EE%C1%FF%C8Z%FF%CDk%FF%D0s%FF%D4%81%FF%D5%82%FF%D5%83%FF%DC%97%FF%DE%9D%FF%E7%B8%FF%CCl%7BQ%13%80U%15%82W%16%81U%16%89%5B%18%87%5B%18%8C%5E%1A%94d%1D%C5%83-%C9%87%2F%C6%84.%C6%85.%CD%8B2%C9%871%CB%8A3%CD%8B5%DC%98%3F%DF%9BB%E0%9CC%E1%A5U%CB%871%CF%8B5%D1%8D6%DB%97%40%DF%9AB%DD%99B%E3%B0p%E7%CC%AE%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%2F%00%2C%00%00%00%00%10%00%10%00%00%06a%C0%97pH%2C%1A%8FH%A1%ABTr%25%87%2B%04%82%F4%7C%B9X%91%08%CB%99%1C!%26%13%84*iJ9(%15G%CA%84%14%01%1A%97%0C%03%80%3A%9A%3E%81%84%3E%11%08%B1%8B%20%02%12%0F%18%1A%0F%0A%03'F%1C%04%0B%10%16%18%10%0B%05%1CF%1D-%06%07%9A%9A-%1EG%1B%A0%A1%A0U%A4%A5%A6BA%00%3B\");" +
+  "    background-repeat: no-repeat;" +
+  "    background-position: 4px center;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_sb {" +
+  "    position: absolute;" +
+  "    overflow-x: hidden;" +
+  "    overflow-y: scroll;" +
+  "    right: 0;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_sb div {" +
+  "    position: absolute;" +
+  "    width: 1px;" +
+  "    left: 0;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_print_margin_layer {" +
+  "    z-index: 0;" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    margin: 0;" +
+  "    left: 0;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_print_margin {" +
+  "    position: absolute;" +
+  "    height: 100%;" +
+  "}" +
+  "" +
+  ".ace_editor textarea {" +
+  "    position: fixed;" +
+  "    z-index: -1;" +
+  "    width: 10px;" +
+  "    height: 30px;" +
+  "    opacity: 0;" +
+  "    background: transparent;" +
+  "    appearance: none;" +
+  "    -moz-appearance: none;" +
+  "    border: none;" +
+  "    resize: none;" +
+  "    outline: none;" +
+  "    overflow: hidden;" +
+  "}" +
+  "" +
+  ".ace_layer {" +
+  "    z-index: 1;" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    white-space: nowrap;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "}" +
+  "" +
+  ".ace_text-layer {" +
+  "    color: black;" +
+  "}" +
+  "" +
+  ".ace_cjk {" +
+  "    display: inline-block;" +
+  "    text-align: center;" +
+  "}" +
+  "" +
+  ".ace_cursor-layer {" +
+  "    z-index: 4;" +
+  "    cursor: text;" +
+  "    /* setting pointer-events: none; here will break mouse wheel scrolling in Safari */" +
+  "}" +
+  "" +
+  ".ace_cursor {" +
+  "    z-index: 4;" +
+  "    position: absolute;" +
+  "}" +
+  "" +
+  ".ace_cursor.ace_hidden {" +
+  "    opacity: 0.2;" +
+  "}" +
+  "" +
+  ".ace_line {" +
+  "    white-space: nowrap;" +
+  "}" +
+  "" +
+  ".ace_marker-layer {" +
+  "    cursor: text;" +
+  "    pointer-events: none;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_step {" +
+  "    position: absolute;" +
+  "    z-index: 3;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_selection {" +
+  "    position: absolute;" +
+  "    z-index: 4;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_bracket {" +
+  "    position: absolute;" +
+  "    z-index: 5;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_active_line {" +
+  "    position: absolute;" +
+  "    z-index: 2;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_selected_word {" +
+  "    position: absolute;" +
+  "    z-index: 6;" +
+  "    box-sizing: border-box;" +
+  "    -moz-box-sizing: border-box;" +
+  "    -webkit-box-sizing: border-box;" +
+  "}" +
+  "" +
+  ".ace_line .ace_fold {" +
+  "    cursor: pointer;" +
+  "}" +
+  "" +
+  ".ace_dragging .ace_marker-layer, .ace_dragging .ace_text-layer {" +
+  "  cursor: move;" +
+  "}" +
+  "");
+
+define("text/lib/ace/css/editor.css", [], ".ace_editor {" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    font-family: Monaco, \"Menlo\", \"Courier New\", monospace;" +
+  "    font-size: 12px;" +
+  "}" +
+  "" +
+  ".ace_scroller {" +
+  "    position: absolute;" +
+  "    overflow-x: scroll;" +
+  "    overflow-y: hidden;" +
+  "}" +
+  "" +
+  ".ace_content {" +
+  "    position: absolute;" +
+  "    box-sizing: border-box;" +
+  "    -moz-box-sizing: border-box;" +
+  "    -webkit-box-sizing: border-box;" +
+  "}" +
+  "" +
+  ".ace_composition {" +
+  "    position: absolute;" +
+  "    background: #555;" +
+  "    color: #DDD;" +
+  "    z-index: 4;" +
+  "}" +
+  "" +
+  ".ace_gutter {" +
+  "    position: absolute;" +
+  "    overflow-x: hidden;" +
+  "    overflow-y: hidden;" +
+  "    height: 100%;" +
+  "}" +
+  "" +
+  ".ace_gutter-cell.ace_error {" +
+  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%F5or%F5%87%88%F5nr%F4ns%EBmq%F5z%7F%DDJT%DEKS%DFOW%F1Yc%F2ah%CE(7%CE)8%D18E%DD%40M%F2KZ%EBU%60%F4%60m%DCir%C8%16(%C8%19*%CE%255%F1%3FR%F1%3FS%E6%AB%B5%CA%5DI%CEn%5E%F7%A2%9A%C9G%3E%E0a%5B%F7%89%85%F5yy%F6%82%80%ED%82%80%FF%BF%BF%E3%C4%C4%FF%FF%FF%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%25%00%2C%00%00%00%00%10%00%10%00%00%06p%C0%92pH%2C%1A%8F%C8%D2H%93%E1d4%23%E4%88%D3%09mB%1DN%B48%F5%90%40%60%92G%5B%94%20%3E%22%D2%87%24%FA%20%24%C5%06A%00%20%B1%07%02B%A38%89X.v%17%82%11%13q%10%0Fi%24%0F%8B%10%7BD%12%0Ei%09%92%09%0EpD%18%15%24%0A%9Ci%05%0C%18F%18%0B%07%04%01%04%06%A0H%18%12%0D%14%0D%12%A1I%B3%B4%B5IA%00%3B\");" +
+  "    background-repeat: no-repeat;" +
+  "    background-position: 4px center;" +
+  "}" +
+  "" +
+  ".ace_gutter-cell.ace_warning {" +
+  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%FF%DBr%FF%DE%81%FF%E2%8D%FF%E2%8F%FF%E4%96%FF%E3%97%FF%E5%9D%FF%E6%9E%FF%EE%C1%FF%C8Z%FF%CDk%FF%D0s%FF%D4%81%FF%D5%82%FF%D5%83%FF%DC%97%FF%DE%9D%FF%E7%B8%FF%CCl%7BQ%13%80U%15%82W%16%81U%16%89%5B%18%87%5B%18%8C%5E%1A%94d%1D%C5%83-%C9%87%2F%C6%84.%C6%85.%CD%8B2%C9%871%CB%8A3%CD%8B5%DC%98%3F%DF%9BB%E0%9CC%E1%A5U%CB%871%CF%8B5%D1%8D6%DB%97%40%DF%9AB%DD%99B%E3%B0p%E7%CC%AE%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%2F%00%2C%00%00%00%00%10%00%10%00%00%06a%C0%97pH%2C%1A%8FH%A1%ABTr%25%87%2B%04%82%F4%7C%B9X%91%08%CB%99%1C!%26%13%84*iJ9(%15G%CA%84%14%01%1A%97%0C%03%80%3A%9A%3E%81%84%3E%11%08%B1%8B%20%02%12%0F%18%1A%0F%0A%03'F%1C%04%0B%10%16%18%10%0B%05%1CF%1D-%06%07%9A%9A-%1EG%1B%A0%A1%A0U%A4%A5%A6BA%00%3B\");" +
+  "    background-repeat: no-repeat;" +
+  "    background-position: 4px center;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_sb {" +
+  "    position: absolute;" +
+  "    overflow-x: hidden;" +
+  "    overflow-y: scroll;" +
+  "    right: 0;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_sb div {" +
+  "    position: absolute;" +
+  "    width: 1px;" +
+  "    left: 0;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_print_margin_layer {" +
+  "    z-index: 0;" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    margin: 0;" +
+  "    left: 0;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "}" +
+  "" +
+  ".ace_editor .ace_print_margin {" +
+  "    position: absolute;" +
+  "    height: 100%;" +
+  "}" +
+  "" +
+  ".ace_editor textarea {" +
+  "    position: fixed;" +
+  "    z-index: -1;" +
+  "    width: 10px;" +
+  "    height: 30px;" +
+  "    opacity: 0;" +
+  "    background: transparent;" +
+  "    appearance: none;" +
+  "    -moz-appearance: none;" +
+  "    border: none;" +
+  "    resize: none;" +
+  "    outline: none;" +
+  "    overflow: hidden;" +
+  "}" +
+  "" +
+  ".ace_layer {" +
+  "    z-index: 1;" +
+  "    position: absolute;" +
+  "    overflow: hidden;" +
+  "    white-space: nowrap;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "}" +
+  "" +
+  ".ace_text-layer {" +
+  "    color: black;" +
+  "}" +
+  "" +
+  ".ace_cjk {" +
+  "    display: inline-block;" +
+  "    text-align: center;" +
+  "}" +
+  "" +
+  ".ace_cursor-layer {" +
+  "    z-index: 4;" +
+  "    cursor: text;" +
+  "    /* setting pointer-events: none; here will break mouse wheel scrolling in Safari */" +
+  "}" +
+  "" +
+  ".ace_cursor {" +
+  "    z-index: 4;" +
+  "    position: absolute;" +
+  "}" +
+  "" +
+  ".ace_cursor.ace_hidden {" +
+  "    opacity: 0.2;" +
+  "}" +
+  "" +
+  ".ace_line {" +
+  "    white-space: nowrap;" +
+  "}" +
+  "" +
+  ".ace_marker-layer {" +
+  "    cursor: text;" +
+  "    pointer-events: none;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_step {" +
+  "    position: absolute;" +
+  "    z-index: 3;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_selection {" +
+  "    position: absolute;" +
+  "    z-index: 4;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_bracket {" +
+  "    position: absolute;" +
+  "    z-index: 5;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_active_line {" +
+  "    position: absolute;" +
+  "    z-index: 2;" +
+  "}" +
+  "" +
+  ".ace_marker-layer .ace_selected_word {" +
+  "    position: absolute;" +
+  "    z-index: 6;" +
+  "    box-sizing: border-box;" +
+  "    -moz-box-sizing: border-box;" +
+  "    -webkit-box-sizing: border-box;" +
+  "}" +
+  "" +
+  ".ace_line .ace_fold {" +
+  "    cursor: pointer;" +
+  "}" +
+  "" +
+  ".ace_dragging .ace_marker-layer, .ace_dragging .ace_text-layer {" +
+  "  cursor: move;" +
+  "}" +
+  "");
+
+define("text/demo/styles.css", [], "html {" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    overflow: hidden;" +
+  "}" +
+  "" +
+  "body {" +
+  "    overflow: hidden;" +
+  "    margin: 0;" +
+  "    padding: 0;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;" +
+  "    font-size: 12px;" +
+  "    background: rgb(14, 98, 165);" +
+  "    color: white;" +
+  "}" +
+  "" +
+  "#logo {" +
+  "    padding: 15px;" +
+  "    margin-left: 65px;" +
+  "}" +
+  "" +
+  "#editor {" +
+  "    position: absolute;" +
+  "    top:  0px;" +
+  "    left: 280px;" +
+  "    bottom: 0px;" +
+  "    right: 0px;" +
+  "    background: white;" +
+  "}" +
+  "" +
+  "#controls {" +
+  "    padding: 5px;" +
+  "}" +
+  "" +
+  "#controls td {" +
+  "    text-align: right;" +
+  "}" +
+  "" +
+  "#controls td + td {" +
+  "    text-align: left;" +
+  "}" +
+  "" +
+  "#cockpitInput {" +
+  "    position: absolute;" +
+  "    left: 280px;" +
+  "    right: 0px;" +
+  "    bottom: 0;" +
+  "" +
+  "    border: none; outline: none;" +
+  "    font-family: consolas, courier, monospace;" +
+  "    font-size: 120%;" +
+  "}" +
+  "" +
+  "#cockpitOutput {" +
+  "    padding: 10px;" +
+  "    margin: 0 15px;" +
+  "    border: 1px solid #AAA;" +
+  "    -moz-border-radius-topleft: 10px;" +
+  "    -moz-border-radius-topright: 10px;" +
+  "    border-top-left-radius: 4px; border-top-right-radius: 4px;" +
+  "    background: #DDD; color: #000;" +
   "}");
 
-define("text!build_support/style.css", [], "body {\n" +
-  "    margin:0;\n" +
-  "    padding:0;\n" +
-  "    background-color:#e6f5fc;\n" +
-  "    \n" +
-  "}\n" +
-  "\n" +
-  "H2, H3, H4 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    margin:0;\n" +
-  "    padding:0;\n" +
-  "}\n" +
-  "\n" +
-  "H2 {\n" +
-  "    font-size:28px;\n" +
-  "    color:#263842;\n" +
-  "    padding-bottom:6px;\n" +
-  "}\n" +
-  "\n" +
-  "H3 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    font-size:22px;\n" +
-  "    color:#253741;\n" +
-  "    margin-top:43px;\n" +
-  "    margin-bottom:8px;\n" +
-  "}\n" +
-  "\n" +
-  "H4 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    font-size:21px;\n" +
-  "    color:#222222;\n" +
-  "    margin-bottom:4px;\n" +
-  "}\n" +
-  "\n" +
-  "P {\n" +
-  "    padding:13px 0;\n" +
-  "    margin:0;\n" +
-  "    line-height:22px;\n" +
-  "}\n" +
-  "\n" +
-  "UL{\n" +
-  "    line-height : 22px;\n" +
-  "}\n" +
-  "\n" +
-  "PRE{\n" +
-  "    background : #333;\n" +
-  "    color : white;\n" +
-  "    padding : 10px;\n" +
-  "}\n" +
-  "\n" +
-  "#header {\n" +
-  "    height : 227px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    background: url(images/background.png) repeat-x 0 0;\n" +
-  "    border-bottom:1px solid #c9e8fa;   \n" +
-  "}\n" +
-  "\n" +
-  "#header .content .signature {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-size:11px;\n" +
-  "    color:#ebe4d6;\n" +
-  "    position:absolute;\n" +
-  "    bottom:5px;\n" +
-  "    right:42px;\n" +
-  "    letter-spacing : 1px;\n" +
-  "}\n" +
-  "\n" +
-  ".content {\n" +
-  "    width:970px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    margin:0 auto;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content {\n" +
-  "    height:184px;\n" +
-  "    margin-top:22px;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content .logo {\n" +
-  "    width  : 282px;\n" +
-  "    height : 184px;\n" +
-  "    background:url(images/logo.png) no-repeat 0 0;\n" +
-  "    position:absolute;\n" +
-  "    top:0;\n" +
-  "    left:0;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content .title {\n" +
-  "    width  : 605px;\n" +
-  "    height : 58px;\n" +
-  "    background:url(images/ace.png) no-repeat 0 0;\n" +
-  "    position:absolute;\n" +
-  "    top:98px;\n" +
-  "    left:329px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper {\n" +
-  "    background:url(images/body_background.png) repeat-x 0 0;\n" +
-  "    min-height:250px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content {\n" +
-  "    font-family:Arial;\n" +
-  "    font-size:14px;\n" +
-  "    color:#222222;\n" +
-  "    width:1000px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content .column1 {\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    float:left;\n" +
-  "    width:315px;\n" +
-  "    margin-right:31px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content .column2 {\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    float:left;\n" +
-  "    width:600px;\n" +
-  "    padding-top:47px;\n" +
-  "}\n" +
-  "\n" +
-  ".fork_on_github {\n" +
-  "    width:310px;\n" +
-  "    height:80px;\n" +
-  "    background:url(images/fork_on_github.png) no-repeat 0 0;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    margin-top:49px;\n" +
-  "    cursor:pointer;\n" +
-  "}\n" +
-  "\n" +
-  ".fork_on_github:hover {\n" +
-  "    background-position:0 -80px;\n" +
-  "}\n" +
-  "\n" +
-  ".divider {\n" +
-  "    height:3px;\n" +
-  "    background-color:#bedaea;\n" +
-  "    margin-bottom:3px;\n" +
-  "}\n" +
-  "\n" +
-  ".menu {\n" +
-  "    padding:23px 0 0 24px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.content-list {\n" +
-  "    padding:15px;\n" +
-  "    margin:0;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list {\n" +
-  "    padding:0;\n" +
-  "    margin:0 0 20px 0;\n" +
-  "    list-style-type:none;\n" +
-  "    line-height : 16px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list LI {\n" +
-  "    color:#2557b4;\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-size:14px;\n" +
-  "    padding:7px 0;\n" +
-  "    border-bottom:1px dotted #d6e2e7;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list LI:last-child {\n" +
-  "    border-bottom:0;\n" +
-  "}\n" +
-  "\n" +
-  "A {\n" +
-  "    color:#2557b4;\n" +
-  "    text-decoration:none;\n" +
-  "}\n" +
-  "\n" +
-  "A:hover {\n" +
-  "    text-decoration:underline;\n" +
-  "}\n" +
-  "\n" +
-  "P#first{\n" +
-  "    background : rgba(255,255,255,0.5);\n" +
-  "    padding : 20px;\n" +
-  "    font-size : 16px;\n" +
-  "    line-height : 24px;\n" +
-  "    margin : 0 0 20px 0;\n" +
-  "}\n" +
-  "\n" +
-  "#footer {\n" +
-  "    height:40px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    background:url(images/bottombar.png) repeat-x 0 0;\n" +
-  "    position:relative;\n" +
-  "    margin-top:40px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer {\n" +
-  "    padding:0;\n" +
-  "    margin:8px 11px 0 0;\n" +
-  "    list-style-type:none;\n" +
-  "    float:right;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI {\n" +
-  "    color:white;\n" +
-  "    font-family:Arial;\n" +
-  "    font-size:12px;\n" +
-  "    display:inline-block;\n" +
-  "    margin:0 1px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI A {\n" +
-  "    color:#8dd0ff;\n" +
-  "    text-decoration:none;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI A:hover {\n" +
-  "    text-decoration:underline;\n" +
-  "}\n" +
-  "\n" +
-  "\n" +
-  "\n" +
-  "\n" +
-  "");
-
-define("text!demo/docs/css.css", [], ".text-layer {\n" +
-  "    font-family: Monaco, \"Courier New\", monospace;\n" +
-  "    font-size: 12px;\n" +
-  "    cursor: text;\n" +
+define("text/build/demo/styles.css", [], "html {" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    overflow: hidden;" +
+  "}" +
+  "" +
+  "body {" +
+  "    overflow: hidden;" +
+  "    margin: 0;" +
+  "    padding: 0;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;" +
+  "    font-size: 12px;" +
+  "    background: rgb(14, 98, 165);" +
+  "    color: white;" +
+  "}" +
+  "" +
+  "#logo {" +
+  "    padding: 15px;" +
+  "    margin-left: 65px;" +
+  "}" +
+  "" +
+  "#editor {" +
+  "    position: absolute;" +
+  "    top:  0px;" +
+  "    left: 280px;" +
+  "    bottom: 0px;" +
+  "    right: 0px;" +
+  "    background: white;" +
+  "}" +
+  "" +
+  "#controls {" +
+  "    padding: 5px;" +
+  "}" +
+  "" +
+  "#controls td {" +
+  "    text-align: right;" +
+  "}" +
+  "" +
+  "#controls td + td {" +
+  "    text-align: left;" +
+  "}" +
+  "" +
+  "#cockpitInput {" +
+  "    position: absolute;" +
+  "    left: 280px;" +
+  "    right: 0px;" +
+  "    bottom: 0;" +
+  "" +
+  "    border: none; outline: none;" +
+  "    font-family: consolas, courier, monospace;" +
+  "    font-size: 120%;" +
+  "}" +
+  "" +
+  "#cockpitOutput {" +
+  "    padding: 10px;" +
+  "    margin: 0 15px;" +
+  "    border: 1px solid #AAA;" +
+  "    -moz-border-radius-topleft: 10px;" +
+  "    -moz-border-radius-topright: 10px;" +
+  "    border-top-left-radius: 4px; border-top-right-radius: 4px;" +
+  "    background: #DDD; color: #000;" +
   "}");
 
-define("text!demo/styles.css", [], "html {\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    overflow: hidden;\n" +
-  "}\n" +
-  "\n" +
-  "body {\n" +
-  "    overflow: hidden;\n" +
-  "    margin: 0;\n" +
-  "    padding: 0;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;\n" +
-  "    font-size: 12px;\n" +
-  "    background: rgb(14, 98, 165);\n" +
-  "    color: white;\n" +
-  "}\n" +
-  "\n" +
-  "#logo {\n" +
-  "    padding: 15px;\n" +
-  "    margin-left: 70px;\n" +
-  "}\n" +
-  "\n" +
-  "#editor {\n" +
-  "    position: absolute;\n" +
-  "    top:  0px;\n" +
-  "    left: 300px;\n" +
-  "    bottom: 0px;\n" +
-  "    right: 0px;\n" +
-  "    background: white;\n" +
-  "}\n" +
-  "\n" +
-  "#controls {\n" +
-  "    padding: 5px;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td {\n" +
-  "    text-align: right;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td + td {\n" +
-  "    text-align: left;\n" +
+define("text/support/cockpit/lib/cockpit/ui/request_view.css", [], "" +
+  ".cptRowIn {" +
+  "  display: box; display: -moz-box; display: -webkit-box;" +
+  "  box-orient: horizontal; -moz-box-orient: horizontal; -webkit-box-orient: horizontal;" +
+  "  box-align: center; -moz-box-align: center; -webkit-box-align: center;" +
+  "  color: #333;" +
+  "  background-color: #EEE;" +
+  "  width: 100%;" +
+  "  font-family: consolas, courier, monospace;" +
+  "}" +
+  ".cptRowIn > * { padding-left: 2px; padding-right: 2px; }" +
+  ".cptRowIn > img { cursor: pointer; }" +
+  ".cptHover { display: none; }" +
+  ".cptRowIn:hover > .cptHover { display: block; }" +
+  ".cptRowIn:hover > .cptHover.cptHidden { display: none; }" +
+  ".cptOutTyped {" +
+  "  box-flex: 1; -moz-box-flex: 1; -webkit-box-flex: 1;" +
+  "  font-weight: bold; color: #000; font-size: 120%;" +
+  "}" +
+  ".cptRowOutput { padding-left: 10px; line-height: 1.2em; }" +
+  ".cptRowOutput strong," +
+  ".cptRowOutput b," +
+  ".cptRowOutput th," +
+  ".cptRowOutput h1," +
+  ".cptRowOutput h2," +
+  ".cptRowOutput h3 { color: #000; }" +
+  ".cptRowOutput a { font-weight: bold; color: #666; text-decoration: none; }" +
+  ".cptRowOutput a: hover { text-decoration: underline; cursor: pointer; }" +
+  ".cptRowOutput input[type=password]," +
+  ".cptRowOutput input[type=text]," +
+  ".cptRowOutput textarea {" +
+  "  color: #000; font-size: 120%;" +
+  "  background: transparent; padding: 3px;" +
+  "  border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;" +
+  "}" +
+  ".cptRowOutput table," +
+  ".cptRowOutput td," +
+  ".cptRowOutput th { border: 0; padding: 0 2px; }" +
+  ".cptRowOutput .right { text-align: right; }" +
+  "");
+
+define("text/support/cockpit/lib/cockpit/ui/cli_view.css", [], "" +
+  "#cockpitInput { padding-left: 16px; }" +
+  "" +
+  ".cptOutput { overflow: auto; position: absolute; z-index: 999; display: none; }" +
+  "" +
+  ".cptCompletion { padding: 0; position: absolute; z-index: -1000; }" +
+  ".cptCompletion.VALID { background: #FFF; }" +
+  ".cptCompletion.INCOMPLETE { background: #DDD; }" +
+  ".cptCompletion.INVALID { background: #DDD; }" +
+  ".cptCompletion span { color: #FFF; }" +
+  ".cptCompletion span.INCOMPLETE { color: #DDD; border-bottom: 2px dotted #F80; }" +
+  ".cptCompletion span.INVALID { color: #DDD; border-bottom: 2px dotted #F00; }" +
+  "span.cptPrompt { color: #66F; font-weight: bold; }" +
+  "" +
+  "" +
+  ".cptHints {" +
+  "  color: #000;" +
+  "  position: absolute;" +
+  "  border: 1px solid rgba(230, 230, 230, 0.8);" +
+  "  background: rgba(250, 250, 250, 0.8);" +
+  "  -moz-border-radius-topleft: 10px;" +
+  "  -moz-border-radius-topright: 10px;" +
+  "  border-top-left-radius: 10px; border-top-right-radius: 10px;" +
+  "  z-index: 1000;" +
+  "  padding: 8px;" +
+  "  display: none;" +
+  "}" +
+  "" +
+  ".cptFocusPopup { display: block; }" +
+  ".cptFocusPopup.cptNoPopup { display: none; }" +
+  "" +
+  ".cptHints ul { margin: 0; padding: 0 15px; }" +
+  "" +
+  ".cptGt { font-weight: bold; font-size: 120%; }" +
+  "");
+
+define("text/node_modules/uglify-js/docstyle.css", [], "html { font-family: \"Lucida Grande\",\"Trebuchet MS\",sans-serif; font-size: 12pt; }" +
+  "body { max-width: 60em; }" +
+  ".title  { text-align: center; }" +
+  ".todo   { color: red; }" +
+  ".done   { color: green; }" +
+  ".tag    { background-color:lightblue; font-weight:normal }" +
+  ".target { }" +
+  ".timestamp { color: grey }" +
+  ".timestamp-kwd { color: CadetBlue }" +
+  "p.verse { margin-left: 3% }" +
+  "pre {" +
+  "  border: 1pt solid #AEBDCC;" +
+  "  background-color: #F3F5F7;" +
+  "  padding: 5pt;" +
+  "  font-family: monospace;" +
+  "  font-size: 90%;" +
+  "  overflow:auto;" +
+  "}" +
+  "pre.src {" +
+  "  background-color: #eee; color: #112; border: 1px solid #000;" +
+  "}" +
+  "table { border-collapse: collapse; }" +
+  "td, th { vertical-align: top; }" +
+  "dt { font-weight: bold; }" +
+  "div.figure { padding: 0.5em; }" +
+  "div.figure p { text-align: center; }" +
+  ".linenr { font-size:smaller }" +
+  ".code-highlighted {background-color:#ffff00;}" +
+  ".org-info-js_info-navigation { border-style:none; }" +
+  "#org-info-js_console-label { font-size:10px; font-weight:bold;" +
+  "  white-space:nowrap; }" +
+  ".org-info-js_search-highlight {background-color:#ffff00; color:#000000;" +
+  "  font-weight:bold; }" +
+  "" +
+  "sup {" +
+  "  vertical-align: baseline;" +
+  "  position: relative;" +
+  "  top: -0.5em;" +
+  "  font-size: 80%;" +
+  "}" +
+  "" +
+  "sup a:link, sup a:visited {" +
+  "  text-decoration: none;" +
+  "  color: #c00;" +
+  "}" +
+  "" +
+  "sup a:before { content: \"[\"; color: #999; }" +
+  "sup a:after { content: \"]\"; color: #999; }" +
+  "" +
+  "h1.title { border-bottom: 4px solid #000; padding-bottom: 5px; margin-bottom: 2em; }" +
+  "" +
+  "#postamble {" +
+  "  color: #777;" +
+  "  font-size: 90%;" +
+  "  padding-top: 1em; padding-bottom: 1em; border-top: 1px solid #999;" +
+  "  margin-top: 2em;" +
+  "  padding-left: 2em;" +
+  "  padding-right: 2em;" +
+  "  text-align: right;" +
+  "}" +
+  "" +
+  "#postamble p { margin: 0; }" +
+  "" +
+  "#footnotes { border-top: 1px solid #000; }" +
+  "" +
+  "h1 { font-size: 200% }" +
+  "h2 { font-size: 175% }" +
+  "h3 { font-size: 150% }" +
+  "h4 { font-size: 125% }" +
+  "" +
+  "h1, h2, h3, h4 { font-family: \"Bookman\",Georgia,\"Times New Roman\",serif; font-weight: normal; }" +
+  "" +
+  "@media print {" +
+  "  html { font-size: 11pt; }" +
+  "}" +
+  "");
+
+define("text/build_support/style.css", [], "body {" +
+  "    margin:0;" +
+  "    padding:0;" +
+  "    background-color:#e6f5fc;" +
+  "    " +
+  "}" +
+  "" +
+  "H2, H3, H4 {" +
+  "    font-family:Trebuchet MS;" +
+  "    font-weight:bold;" +
+  "    margin:0;" +
+  "    padding:0;" +
+  "}" +
+  "" +
+  "H2 {" +
+  "    font-size:28px;" +
+  "    color:#263842;" +
+  "    padding-bottom:6px;" +
+  "}" +
+  "" +
+  "H3 {" +
+  "    font-family:Trebuchet MS;" +
+  "    font-weight:bold;" +
+  "    font-size:22px;" +
+  "    color:#253741;" +
+  "    margin-top:43px;" +
+  "    margin-bottom:8px;" +
+  "}" +
+  "" +
+  "H4 {" +
+  "    font-family:Trebuchet MS;" +
+  "    font-weight:bold;" +
+  "    font-size:21px;" +
+  "    color:#222222;" +
+  "    margin-bottom:4px;" +
+  "}" +
+  "" +
+  "P {" +
+  "    padding:13px 0;" +
+  "    margin:0;" +
+  "    line-height:22px;" +
+  "}" +
+  "" +
+  "UL{" +
+  "    line-height : 22px;" +
+  "}" +
+  "" +
+  "PRE{" +
+  "    background : #333;" +
+  "    color : white;" +
+  "    padding : 10px;" +
+  "}" +
+  "" +
+  "#header {" +
+  "    height : 227px;" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    background: url(images/background.png) repeat-x 0 0;" +
+  "    border-bottom:1px solid #c9e8fa;   " +
+  "}" +
+  "" +
+  "#header .content .signature {" +
+  "    font-family:Trebuchet MS;" +
+  "    font-size:11px;" +
+  "    color:#ebe4d6;" +
+  "    position:absolute;" +
+  "    bottom:5px;" +
+  "    right:42px;" +
+  "    letter-spacing : 1px;" +
+  "}" +
+  "" +
+  ".content {" +
+  "    width:970px;" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    margin:0 auto;" +
+  "}" +
+  "" +
+  "#header .content {" +
+  "    height:184px;" +
+  "    margin-top:22px;" +
+  "}" +
+  "" +
+  "#header .content .logo {" +
+  "    width  : 282px;" +
+  "    height : 184px;" +
+  "    background:url(images/logo.png) no-repeat 0 0;" +
+  "    position:absolute;" +
+  "    top:0;" +
+  "    left:0;" +
+  "}" +
+  "" +
+  "#header .content .title {" +
+  "    width  : 605px;" +
+  "    height : 58px;" +
+  "    background:url(images/ace.png) no-repeat 0 0;" +
+  "    position:absolute;" +
+  "    top:98px;" +
+  "    left:329px;" +
+  "}" +
+  "" +
+  "#wrapper {" +
+  "    background:url(images/body_background.png) repeat-x 0 0;" +
+  "    min-height:250px;" +
+  "}" +
+  "" +
+  "#wrapper .content {" +
+  "    font-family:Arial;" +
+  "    font-size:14px;" +
+  "    color:#222222;" +
+  "    width:1000px;" +
+  "}" +
+  "" +
+  "#wrapper .content .column1 {" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    float:left;" +
+  "    width:315px;" +
+  "    margin-right:31px;" +
+  "}" +
+  "" +
+  "#wrapper .content .column2 {" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    float:left;" +
+  "    width:600px;" +
+  "    padding-top:47px;" +
+  "}" +
+  "" +
+  ".fork_on_github {" +
+  "    width:310px;" +
+  "    height:80px;" +
+  "    background:url(images/fork_on_github.png) no-repeat 0 0;" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    margin-top:49px;" +
+  "    cursor:pointer;" +
+  "}" +
+  "" +
+  ".fork_on_github:hover {" +
+  "    background-position:0 -80px;" +
+  "}" +
+  "" +
+  ".divider {" +
+  "    height:3px;" +
+  "    background-color:#bedaea;" +
+  "    margin-bottom:3px;" +
+  "}" +
+  "" +
+  ".menu {" +
+  "    padding:23px 0 0 24px;" +
+  "}" +
+  "" +
+  "UL.content-list {" +
+  "    padding:15px;" +
+  "    margin:0;" +
+  "}" +
+  "" +
+  "UL.menu-list {" +
+  "    padding:0;" +
+  "    margin:0 0 20px 0;" +
+  "    list-style-type:none;" +
+  "    line-height : 16px;" +
+  "}" +
+  "" +
+  "UL.menu-list LI {" +
+  "    color:#2557b4;" +
+  "    font-family:Trebuchet MS;" +
+  "    font-size:14px;" +
+  "    padding:7px 0;" +
+  "    border-bottom:1px dotted #d6e2e7;" +
+  "}" +
+  "" +
+  "UL.menu-list LI:last-child {" +
+  "    border-bottom:0;" +
+  "}" +
+  "" +
+  "A {" +
+  "    color:#2557b4;" +
+  "    text-decoration:none;" +
+  "}" +
+  "" +
+  "A:hover {" +
+  "    text-decoration:underline;" +
+  "}" +
+  "" +
+  "P#first{" +
+  "    background : rgba(255,255,255,0.5);" +
+  "    padding : 20px;" +
+  "    font-size : 16px;" +
+  "    line-height : 24px;" +
+  "    margin : 0 0 20px 0;" +
+  "}" +
+  "" +
+  "#footer {" +
+  "    height:40px;" +
+  "    position:relative;" +
+  "    overflow:hidden;" +
+  "    background:url(images/bottombar.png) repeat-x 0 0;" +
+  "    position:relative;" +
+  "    margin-top:40px;" +
+  "}" +
+  "" +
+  "UL.menu-footer {" +
+  "    padding:0;" +
+  "    margin:8px 11px 0 0;" +
+  "    list-style-type:none;" +
+  "    float:right;" +
+  "}" +
+  "" +
+  "UL.menu-footer LI {" +
+  "    color:white;" +
+  "    font-family:Arial;" +
+  "    font-size:12px;" +
+  "    display:inline-block;" +
+  "    margin:0 1px;" +
+  "}" +
+  "" +
+  "UL.menu-footer LI A {" +
+  "    color:#8dd0ff;" +
+  "    text-decoration:none;" +
+  "}" +
+  "" +
+  "UL.menu-footer LI A:hover {" +
+  "    text-decoration:underline;" +
+  "}" +
+  "" +
+  "" +
+  "" +
+  "" +
+  "");
+
+define("text/tool/Theme.tmpl.css", [], ".%cssClass% .ace_editor {" +
+  "  border: 2px solid rgb(159, 159, 159);" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_editor.ace_focus {" +
+  "  border: 2px solid #327fbd;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_gutter {" +
+  "  width: 50px;" +
+  "  background: #e8e8e8;" +
+  "  color: #333;" +
+  "  overflow : hidden;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_gutter-layer {" +
+  "  width: 100%;" +
+  "  text-align: right;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_gutter-layer .ace_gutter-cell {" +
+  "  padding-right: 6px;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_print_margin {" +
+  "  width: 1px;" +
+  "  background: %printMargin%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_scroller {" +
+  "  background-color: %background%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_text-layer {" +
+  "  cursor: text;" +
+  "  color: %foreground%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_cursor {" +
+  "  border-left: 2px solid %cursor%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_cursor.ace_overwrite {" +
+  "  border-left: 0px;" +
+  "  border-bottom: 1px solid %overwrite%;" +
+  "}" +
+  " " +
+  ".%cssClass% .ace_marker-layer .ace_selection {" +
+  "  background: %selection%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_marker-layer .ace_step {" +
+  "  background: %step%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_marker-layer .ace_bracket {" +
+  "  margin: -1px 0 0 -1px;" +
+  "  border: 1px solid %bracket%;" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_marker-layer .ace_active_line {" +
+  "  background: %active_line%;" +
+  "}" +
+  "" +
+  "       " +
+  ".%cssClass% .ace_invisible {" +
+  "  %invisible%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_keyword {" +
+  "  %keyword%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_keyword.ace_operator {" +
+  "  %keyword.operator%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_constant {" +
+  "  %constant%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_constant.ace_language {" +
+  "  %constant.language%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_constant.ace_library {" +
+  "  %constant.library%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_constant.ace_numeric {" +
+  "  %constant.numeric%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_invalid {" +
+  "  %invalid%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_invalid.ace_illegal {" +
+  "  %invalid.illegal%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_invalid.ace_deprecated {" +
+  "  %invalid.deprecated%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_support {" +
+  "  %support%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_support.ace_function {" +
+  "  %support.function%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_function.ace_buildin {" +
+  "  %function.buildin%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_string {" +
+  "  %string%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_string.ace_regexp {" +
+  "  %string.regexp%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_comment {" +
+  "  %comment%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_comment.ace_doc {" +
+  "  %comment.doc%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_comment.ace_doc.ace_tag {" +
+  "  %comment.doc.tag%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_variable {" +
+  "  %variable%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_variable.ace_language {" +
+  "  %variable.language%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_xml_pe {" +
+  "  %xml_pe%" +
+  "}" +
+  "" +
+  ".%cssClass% .ace_collab.ace_user1 {" +
+  "  %collab.user1%   " +
   "}");
 
-define("text!deps/csslint/demos/demo.css", [], "@charset \"UTF-8\";\n" +
-  "\n" +
-  "@import url(\"booya.css\") print,screen;\n" +
-  "@import \"whatup.css\" screen;\n" +
-  "@import \"wicked.css\";\n" +
-  "\n" +
-  "@namespace \"http://www.w3.org/1999/xhtml\";\n" +
-  "@namespace svg \"http://www.w3.org/2000/svg\";\n" +
-  "\n" +
-  "li.inline #foo {\n" +
-  "  background: url(\"something.png\");\n" +
-  "  display: inline;\n" +
-  "  padding-left: 3px;\n" +
-  "  padding-right: 7px;\n" +
-  "  border-right: 1px dotted #066;\n" +
-  "}\n" +
-  "\n" +
-  "li.last.first {\n" +
-  "  display: inline;\n" +
-  "  padding-left: 3px !important;\n" +
-  "  padding-right: 3px;\n" +
-  "  border-right: 0px;\n" +
-  "}\n" +
-  "\n" +
-  "@media print {\n" +
-  "    li.inline {\n" +
-  "      color: black;\n" +
-  "    }\n" +
-  "\n" +
-  "\n" +
-  "@charset \"UTF-8\"; \n" +
-  "\n" +
-  "@page {\n" +
-  "  margin: 10%;\n" +
-  "  counter-increment: page;\n" +
-  "\n" +
-  "  @top-center {\n" +
-  "    font-family: sans-serif;\n" +
-  "    font-weight: bold;\n" +
-  "    font-size: 2em;\n" +
-  "    content: counter(page);\n" +
-  "  }\n" +
-  "}");
-
-define("text!doc/site/iphone.css", [], "#wrapper {\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content .column1 {\n" +
-  "    margin:0 16px 0 15px;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content .signature {\n" +
-  "    font-size:18px;\n" +
-  "    bottom:0;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list LI {\n" +
-  "    font-size:22px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI {\n" +
-  "    font-size:22px;\n" +
-  "}\n" +
-  "\n" +
-  "PRE{\n" +
-  "    font-size:22px;\n" +
-  "}\n" +
-  "");
-
-define("text!doc/site/style.css", [], "body {\n" +
-  "    margin:0;\n" +
-  "    padding:0;\n" +
-  "    background-color:#e6f5fc;\n" +
-  "    \n" +
-  "}\n" +
-  "\n" +
-  "H2, H3, H4 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    margin:0;\n" +
-  "    padding:0;\n" +
-  "}\n" +
-  "\n" +
-  "H2 {\n" +
-  "    font-size:28px;\n" +
-  "    color:#263842;\n" +
-  "    padding-bottom:6px;\n" +
-  "}\n" +
-  "\n" +
-  "H3 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    font-size:22px;\n" +
-  "    color:#253741;\n" +
-  "    margin-top:43px;\n" +
-  "    margin-bottom:8px;\n" +
-  "}\n" +
-  "\n" +
-  "H4 {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-weight:bold;\n" +
-  "    font-size:21px;\n" +
-  "    color:#222222;\n" +
-  "    margin-bottom:4px;\n" +
-  "}\n" +
-  "\n" +
-  "P {\n" +
-  "    padding:13px 0;\n" +
-  "    margin:0;\n" +
-  "    line-height:22px;\n" +
-  "}\n" +
-  "\n" +
-  "UL{\n" +
-  "    line-height : 22px;\n" +
-  "}\n" +
-  "\n" +
-  "PRE{\n" +
-  "    background : #333;\n" +
-  "    color : white;\n" +
-  "    padding : 10px;\n" +
-  "}\n" +
-  "\n" +
-  "#header {\n" +
-  "    height : 227px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    background: url(images/background.png) repeat-x 0 0;\n" +
-  "    border-bottom:1px solid #c9e8fa;   \n" +
-  "}\n" +
-  "\n" +
-  "#header .content .signature {\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-size:11px;\n" +
-  "    color:#ebe4d6;\n" +
-  "    position:absolute;\n" +
-  "    bottom:5px;\n" +
-  "    right:42px;\n" +
-  "    letter-spacing : 1px;\n" +
-  "}\n" +
-  "\n" +
-  ".content {\n" +
-  "    width:970px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    margin:0 auto;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content {\n" +
-  "    height:184px;\n" +
-  "    margin-top:22px;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content .logo {\n" +
-  "    width  : 282px;\n" +
-  "    height : 184px;\n" +
-  "    background:url(images/logo.png) no-repeat 0 0;\n" +
-  "    position:absolute;\n" +
-  "    top:0;\n" +
-  "    left:0;\n" +
-  "}\n" +
-  "\n" +
-  "#header .content .title {\n" +
-  "    width  : 605px;\n" +
-  "    height : 58px;\n" +
-  "    background:url(images/ace.png) no-repeat 0 0;\n" +
-  "    position:absolute;\n" +
-  "    top:98px;\n" +
-  "    left:329px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper {\n" +
-  "    background:url(images/body_background.png) repeat-x 0 0;\n" +
-  "    min-height:250px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content {\n" +
-  "    font-family:Arial;\n" +
-  "    font-size:14px;\n" +
-  "    color:#222222;\n" +
-  "    width:1000px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content .column1 {\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    float:left;\n" +
-  "    width:315px;\n" +
-  "    margin-right:31px;\n" +
-  "}\n" +
-  "\n" +
-  "#wrapper .content .column2 {\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    float:left;\n" +
-  "    width:600px;\n" +
-  "    padding-top:47px;\n" +
-  "}\n" +
-  "\n" +
-  ".fork_on_github {\n" +
-  "    width:310px;\n" +
-  "    height:80px;\n" +
-  "    background:url(images/fork_on_github.png) no-repeat 0 0;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    margin-top:49px;\n" +
-  "    cursor:pointer;\n" +
-  "}\n" +
-  "\n" +
-  ".fork_on_github:hover {\n" +
-  "    background-position:0 -80px;\n" +
-  "}\n" +
-  "\n" +
-  ".divider {\n" +
-  "    height:3px;\n" +
-  "    background-color:#bedaea;\n" +
-  "    margin-bottom:3px;\n" +
-  "}\n" +
-  "\n" +
-  ".menu {\n" +
-  "    padding:23px 0 0 24px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.content-list {\n" +
-  "    padding:15px;\n" +
-  "    margin:0;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list {\n" +
-  "    padding:0;\n" +
-  "    margin:0 0 20px 0;\n" +
-  "    list-style-type:none;\n" +
-  "    line-height : 16px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list LI {\n" +
-  "    color:#2557b4;\n" +
-  "    font-family:Trebuchet MS;\n" +
-  "    font-size:14px;\n" +
-  "    padding:7px 0;\n" +
-  "    border-bottom:1px dotted #d6e2e7;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-list LI:last-child {\n" +
-  "    border-bottom:0;\n" +
-  "}\n" +
-  "\n" +
-  "A {\n" +
-  "    color:#2557b4;\n" +
-  "    text-decoration:none;\n" +
-  "}\n" +
-  "\n" +
-  "A:hover {\n" +
-  "    text-decoration:underline;\n" +
-  "}\n" +
-  "\n" +
-  "P#first{\n" +
-  "    background : rgba(255,255,255,0.5);\n" +
-  "    padding : 20px;\n" +
-  "    font-size : 16px;\n" +
-  "    line-height : 24px;\n" +
-  "    margin : 0 0 20px 0;\n" +
-  "}\n" +
-  "\n" +
-  "#footer {\n" +
-  "    height:40px;\n" +
-  "    position:relative;\n" +
-  "    overflow:hidden;\n" +
-  "    background:url(images/bottombar.png) repeat-x 0 0;\n" +
-  "    position:relative;\n" +
-  "    margin-top:40px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer {\n" +
-  "    padding:0;\n" +
-  "    margin:8px 11px 0 0;\n" +
-  "    list-style-type:none;\n" +
-  "    float:right;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI {\n" +
-  "    color:white;\n" +
-  "    font-family:Arial;\n" +
-  "    font-size:12px;\n" +
-  "    display:inline-block;\n" +
-  "    margin:0 1px;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI A {\n" +
-  "    color:#8dd0ff;\n" +
-  "    text-decoration:none;\n" +
-  "}\n" +
-  "\n" +
-  "UL.menu-footer LI A:hover {\n" +
-  "    text-decoration:underline;\n" +
-  "}\n" +
-  "\n" +
-  "\n" +
-  "\n" +
-  "\n" +
-  "");
-
-define("text!lib/ace/css/editor.css", [], "@import url(//fonts.googleapis.com/css?family=Droid+Sans+Mono);\n" +
-  "\n" +
-  "\n" +
-  ".ace_editor {\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    font-family: 'Monaco', 'Menlo', 'Droid Sans Mono', 'Courier New', monospace;\n" +
-  "    font-size: 12px;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_scroller {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: scroll;\n" +
-  "    overflow-y: hidden;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_content {\n" +
-  "    position: absolute;\n" +
-  "    box-sizing: border-box;\n" +
-  "    -moz-box-sizing: border-box;\n" +
-  "    -webkit-box-sizing: border-box;\n" +
-  "    cursor: text;\n" +
-  "}\n" +
-  "\n" +
-  "/* setting pointer-events: auto; on node under the mouse, which changes during scroll,\n" +
-  "  will break mouse wheel scrolling in Safari */\n" +
-  ".ace_content * {\n" +
-  "     pointer-events: none;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_composition {\n" +
-  "    position: absolute;\n" +
-  "    background: #555;\n" +
-  "    color: #DDD;\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: hidden;\n" +
-  "    overflow-y: hidden;\n" +
-  "    height: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter-cell.ace_error {\n" +
-  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%F5or%F5%87%88%F5nr%F4ns%EBmq%F5z%7F%DDJT%DEKS%DFOW%F1Yc%F2ah%CE(7%CE)8%D18E%DD%40M%F2KZ%EBU%60%F4%60m%DCir%C8%16(%C8%19*%CE%255%F1%3FR%F1%3FS%E6%AB%B5%CA%5DI%CEn%5E%F7%A2%9A%C9G%3E%E0a%5B%F7%89%85%F5yy%F6%82%80%ED%82%80%FF%BF%BF%E3%C4%C4%FF%FF%FF%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%25%00%2C%00%00%00%00%10%00%10%00%00%06p%C0%92pH%2C%1A%8F%C8%D2H%93%E1d4%23%E4%88%D3%09mB%1DN%B48%F5%90%40%60%92G%5B%94%20%3E%22%D2%87%24%FA%20%24%C5%06A%00%20%B1%07%02B%A38%89X.v%17%82%11%13q%10%0Fi%24%0F%8B%10%7BD%12%0Ei%09%92%09%0EpD%18%15%24%0A%9Ci%05%0C%18F%18%0B%07%04%01%04%06%A0H%18%12%0D%14%0D%12%A1I%B3%B4%B5IA%00%3B\");\n" +
-  "    background-repeat: no-repeat;\n" +
-  "    background-position: 4px center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_gutter-cell.ace_warning {\n" +
-  "    background-image: url(\"data:image/gif,GIF89a%10%00%10%00%D5%00%00%FF%DBr%FF%DE%81%FF%E2%8D%FF%E2%8F%FF%E4%96%FF%E3%97%FF%E5%9D%FF%E6%9E%FF%EE%C1%FF%C8Z%FF%CDk%FF%D0s%FF%D4%81%FF%D5%82%FF%D5%83%FF%DC%97%FF%DE%9D%FF%E7%B8%FF%CCl%7BQ%13%80U%15%82W%16%81U%16%89%5B%18%87%5B%18%8C%5E%1A%94d%1D%C5%83-%C9%87%2F%C6%84.%C6%85.%CD%8B2%C9%871%CB%8A3%CD%8B5%DC%98%3F%DF%9BB%E0%9CC%E1%A5U%CB%871%CF%8B5%D1%8D6%DB%97%40%DF%9AB%DD%99B%E3%B0p%E7%CC%AE%FF%FF%FF%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00!%F9%04%01%00%00%2F%00%2C%00%00%00%00%10%00%10%00%00%06a%C0%97pH%2C%1A%8FH%A1%ABTr%25%87%2B%04%82%F4%7C%B9X%91%08%CB%99%1C!%26%13%84*iJ9(%15G%CA%84%14%01%1A%97%0C%03%80%3A%9A%3E%81%84%3E%11%08%B1%8B%20%02%12%0F%18%1A%0F%0A%03'F%1C%04%0B%10%16%18%10%0B%05%1CF%1D-%06%07%9A%9A-%1EG%1B%A0%A1%A0U%A4%A5%A6BA%00%3B\");\n" +
-  "    background-repeat: no-repeat;\n" +
-  "    background-position: 4px center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_sb {\n" +
-  "    position: absolute;\n" +
-  "    overflow-x: hidden;\n" +
-  "    overflow-y: scroll;\n" +
-  "    right: 0;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_sb div {\n" +
-  "    position: absolute;\n" +
-  "    width: 1px;\n" +
-  "    left: 0;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_print_margin_layer {\n" +
-  "    z-index: 0;\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    margin: 0;\n" +
-  "    left: 0;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor .ace_print_margin {\n" +
-  "    position: absolute;\n" +
-  "    height: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_editor textarea {\n" +
-  "    position: fixed;\n" +
-  "    z-index: -1;\n" +
-  "    width: 10px;\n" +
-  "    height: 30px;\n" +
-  "    opacity: 0;\n" +
-  "    background: transparent;\n" +
-  "    appearance: none;\n" +
-  "    -moz-appearance: none;\n" +
-  "    border: none;\n" +
-  "    resize: none;\n" +
-  "    outline: none;\n" +
-  "    overflow: hidden;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_layer {\n" +
-  "    z-index: 1;\n" +
-  "    position: absolute;\n" +
-  "    overflow: hidden;\n" +
-  "    white-space: nowrap;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_text-layer {\n" +
-  "    color: black;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cjk {\n" +
-  "    display: inline-block;\n" +
-  "    text-align: center;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor-layer {\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor {\n" +
-  "    z-index: 4;\n" +
-  "    position: absolute;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_cursor.ace_hidden {\n" +
-  "    opacity: 0.2;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_line {\n" +
-  "    white-space: nowrap;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_step {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 3;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_selection {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 4;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_bracket {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 5;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_active_line {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 2;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_marker-layer .ace_selected_word {\n" +
-  "    position: absolute;\n" +
-  "    z-index: 6;\n" +
-  "    box-sizing: border-box;\n" +
-  "    -moz-box-sizing: border-box;\n" +
-  "    -webkit-box-sizing: border-box;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_line .ace_fold {\n" +
-  "    cursor: pointer;\n" +
-  "     pointer-events: auto;\n" +
-  "     color: darkred;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_fold:hover{\n" +
-  "    background: gold!important;\n" +
-  "}\n" +
-  "\n" +
-  ".ace_dragging .ace_content {\n" +
-  "  cursor: move;\n" +
-  "}\n" +
-  "");
-
-define("text!node_modules/uglify-js/docstyle.css", [], "html { font-family: \"Lucida Grande\",\"Trebuchet MS\",sans-serif; font-size: 12pt; }\n" +
-  "body { max-width: 60em; }\n" +
-  ".title  { text-align: center; }\n" +
-  ".todo   { color: red; }\n" +
-  ".done   { color: green; }\n" +
-  ".tag    { background-color:lightblue; font-weight:normal }\n" +
-  ".target { }\n" +
-  ".timestamp { color: grey }\n" +
-  ".timestamp-kwd { color: CadetBlue }\n" +
-  "p.verse { margin-left: 3% }\n" +
-  "pre {\n" +
-  "  border: 1pt solid #AEBDCC;\n" +
-  "  background-color: #F3F5F7;\n" +
-  "  padding: 5pt;\n" +
-  "  font-family: monospace;\n" +
-  "  font-size: 90%;\n" +
-  "  overflow:auto;\n" +
-  "}\n" +
-  "pre.src {\n" +
-  "  background-color: #eee; color: #112; border: 1px solid #000;\n" +
-  "}\n" +
-  "table { border-collapse: collapse; }\n" +
-  "td, th { vertical-align: top; }\n" +
-  "dt { font-weight: bold; }\n" +
-  "div.figure { padding: 0.5em; }\n" +
-  "div.figure p { text-align: center; }\n" +
-  ".linenr { font-size:smaller }\n" +
-  ".code-highlighted {background-color:#ffff00;}\n" +
-  ".org-info-js_info-navigation { border-style:none; }\n" +
-  "#org-info-js_console-label { font-size:10px; font-weight:bold;\n" +
-  "  white-space:nowrap; }\n" +
-  ".org-info-js_search-highlight {background-color:#ffff00; color:#000000;\n" +
-  "  font-weight:bold; }\n" +
-  "\n" +
-  "sup {\n" +
-  "  vertical-align: baseline;\n" +
-  "  position: relative;\n" +
-  "  top: -0.5em;\n" +
-  "  font-size: 80%;\n" +
-  "}\n" +
-  "\n" +
-  "sup a:link, sup a:visited {\n" +
-  "  text-decoration: none;\n" +
-  "  color: #c00;\n" +
-  "}\n" +
-  "\n" +
-  "sup a:before { content: \"[\"; color: #999; }\n" +
-  "sup a:after { content: \"]\"; color: #999; }\n" +
-  "\n" +
-  "h1.title { border-bottom: 4px solid #000; padding-bottom: 5px; margin-bottom: 2em; }\n" +
-  "\n" +
-  "#postamble {\n" +
-  "  color: #777;\n" +
-  "  font-size: 90%;\n" +
-  "  padding-top: 1em; padding-bottom: 1em; border-top: 1px solid #999;\n" +
-  "  margin-top: 2em;\n" +
-  "  padding-left: 2em;\n" +
-  "  padding-right: 2em;\n" +
-  "  text-align: right;\n" +
-  "}\n" +
-  "\n" +
-  "#postamble p { margin: 0; }\n" +
-  "\n" +
-  "#footnotes { border-top: 1px solid #000; }\n" +
-  "\n" +
-  "h1 { font-size: 200% }\n" +
-  "h2 { font-size: 175% }\n" +
-  "h3 { font-size: 150% }\n" +
-  "h4 { font-size: 125% }\n" +
-  "\n" +
-  "h1, h2, h3, h4 { font-family: \"Bookman\",Georgia,\"Times New Roman\",serif; font-weight: normal; }\n" +
-  "\n" +
-  "@media print {\n" +
-  "  html { font-size: 11pt; }\n" +
-  "}\n" +
-  "");
-
-define("text!support/cockpit/lib/cockpit/ui/cli_view.css", [], "\n" +
-  "#cockpitInput { padding-left: 16px; }\n" +
-  "\n" +
-  ".cptOutput { overflow: auto; position: absolute; z-index: 999; display: none; }\n" +
-  "\n" +
-  ".cptCompletion { padding: 0; position: absolute; z-index: -1000; }\n" +
-  ".cptCompletion.VALID { background: #FFF; }\n" +
-  ".cptCompletion.INCOMPLETE { background: #DDD; }\n" +
-  ".cptCompletion.INVALID { background: #DDD; }\n" +
-  ".cptCompletion span { color: #FFF; }\n" +
-  ".cptCompletion span.INCOMPLETE { color: #DDD; border-bottom: 2px dotted #F80; }\n" +
-  ".cptCompletion span.INVALID { color: #DDD; border-bottom: 2px dotted #F00; }\n" +
-  "span.cptPrompt { color: #66F; font-weight: bold; }\n" +
-  "\n" +
-  "\n" +
-  ".cptHints {\n" +
-  "  color: #000;\n" +
-  "  position: absolute;\n" +
-  "  border: 1px solid rgba(230, 230, 230, 0.8);\n" +
-  "  background: rgba(250, 250, 250, 0.8);\n" +
-  "  -moz-border-radius-topleft: 10px;\n" +
-  "  -moz-border-radius-topright: 10px;\n" +
-  "  border-top-left-radius: 10px; border-top-right-radius: 10px;\n" +
-  "  z-index: 1000;\n" +
-  "  padding: 8px;\n" +
-  "  display: none;\n" +
-  "}\n" +
-  "\n" +
-  ".cptFocusPopup { display: block; }\n" +
-  ".cptFocusPopup.cptNoPopup { display: none; }\n" +
-  "\n" +
-  ".cptHints ul { margin: 0; padding: 0 15px; }\n" +
-  "\n" +
-  ".cptGt { font-weight: bold; font-size: 120%; }\n" +
-  "");
-
-define("text!support/cockpit/lib/cockpit/ui/request_view.css", [], "\n" +
-  ".cptRowIn {\n" +
-  "  display: box; display: -moz-box; display: -webkit-box;\n" +
-  "  box-orient: horizontal; -moz-box-orient: horizontal; -webkit-box-orient: horizontal;\n" +
-  "  box-align: center; -moz-box-align: center; -webkit-box-align: center;\n" +
-  "  color: #333;\n" +
-  "  background-color: #EEE;\n" +
-  "  width: 100%;\n" +
-  "  font-family: consolas, courier, monospace;\n" +
-  "}\n" +
-  ".cptRowIn > * { padding-left: 2px; padding-right: 2px; }\n" +
-  ".cptRowIn > img { cursor: pointer; }\n" +
-  ".cptHover { display: none; }\n" +
-  ".cptRowIn:hover > .cptHover { display: block; }\n" +
-  ".cptRowIn:hover > .cptHover.cptHidden { display: none; }\n" +
-  ".cptOutTyped {\n" +
-  "  box-flex: 1; -moz-box-flex: 1; -webkit-box-flex: 1;\n" +
-  "  font-weight: bold; color: #000; font-size: 120%;\n" +
-  "}\n" +
-  ".cptRowOutput { padding-left: 10px; line-height: 1.2em; }\n" +
-  ".cptRowOutput strong,\n" +
-  ".cptRowOutput b,\n" +
-  ".cptRowOutput th,\n" +
-  ".cptRowOutput h1,\n" +
-  ".cptRowOutput h2,\n" +
-  ".cptRowOutput h3 { color: #000; }\n" +
-  ".cptRowOutput a { font-weight: bold; color: #666; text-decoration: none; }\n" +
-  ".cptRowOutput a: hover { text-decoration: underline; cursor: pointer; }\n" +
-  ".cptRowOutput input[type=password],\n" +
-  ".cptRowOutput input[type=text],\n" +
-  ".cptRowOutput textarea {\n" +
-  "  color: #000; font-size: 120%;\n" +
-  "  background: transparent; padding: 3px;\n" +
-  "  border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;\n" +
-  "}\n" +
-  ".cptRowOutput table,\n" +
-  ".cptRowOutput td,\n" +
-  ".cptRowOutput th { border: 0; padding: 0 2px; }\n" +
-  ".cptRowOutput .right { text-align: right; }\n" +
-  "");
-
-define("text!tool/Theme.tmpl.css", [], ".%cssClass% .ace_editor {\n" +
-  "  border: 2px solid rgb(159, 159, 159);\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_editor.ace_focus {\n" +
-  "  border: 2px solid #327fbd;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_gutter {\n" +
-  "  width: 50px;\n" +
-  "  background: #e8e8e8;\n" +
-  "  color: #333;\n" +
-  "  overflow : hidden;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_gutter-layer {\n" +
-  "  width: 100%;\n" +
-  "  text-align: right;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_gutter-layer .ace_gutter-cell {\n" +
-  "  padding-right: 6px;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_print_margin {\n" +
-  "  width: 1px;\n" +
-  "  background: %printMargin%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_scroller {\n" +
-  "  background-color: %background%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_text-layer {\n" +
-  "  cursor: text;\n" +
-  "  color: %foreground%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_cursor {\n" +
-  "  border-left: 2px solid %cursor%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_cursor.ace_overwrite {\n" +
-  "  border-left: 0px;\n" +
-  "  border-bottom: 1px solid %overwrite%;\n" +
-  "}\n" +
-  " \n" +
-  ".%cssClass% .ace_marker-layer .ace_selection {\n" +
-  "  background: %selection%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_marker-layer .ace_step {\n" +
-  "  background: %step%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_marker-layer .ace_bracket {\n" +
-  "  margin: -1px 0 0 -1px;\n" +
-  "  border: 1px solid %bracket%;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_marker-layer .ace_active_line {\n" +
-  "  background: %active_line%;\n" +
-  "}\n" +
-  "\n" +
-  "       \n" +
-  ".%cssClass% .ace_invisible {\n" +
-  "  %invisible%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_keyword {\n" +
-  "  %keyword%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_keyword.ace_operator {\n" +
-  "  %keyword.operator%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_constant {\n" +
-  "  %constant%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_constant.ace_language {\n" +
-  "  %constant.language%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_constant.ace_library {\n" +
-  "  %constant.library%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_constant.ace_numeric {\n" +
-  "  %constant.numeric%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_invalid {\n" +
-  "  %invalid%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_invalid.ace_illegal {\n" +
-  "  %invalid.illegal%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_invalid.ace_deprecated {\n" +
-  "  %invalid.deprecated%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_support {\n" +
-  "  %support%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_support.ace_function {\n" +
-  "  %support.function%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_function.ace_buildin {\n" +
-  "  %function.buildin%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_string {\n" +
-  "  %string%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_string.ace_regexp {\n" +
-  "  %string.regexp%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_comment {\n" +
-  "  %comment%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_comment.ace_doc {\n" +
-  "  %comment.doc%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_comment.ace_doc.ace_tag {\n" +
-  "  %comment.doc.tag%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_variable {\n" +
-  "  %variable%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_variable.ace_language {\n" +
-  "  %variable.language%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_xml_pe {\n" +
-  "  %xml_pe%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_meta {\n" +
-  "  %meta%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_meta.ace_tag {\n" +
-  "  %meta.tag%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_meta.ace_tag.ace_input {\n" +
-  "  %ace.meta.tag.input%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_entity.ace_other.ace_attribute-name {\n" +
-  "  %entity.other.attribute-name%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_entity.ace_name {\n" +
-  "  %entity.name%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_entity.ace_name.ace_function {\n" +
-  "  %entity.name.function%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_underline {\n" +
-  "    text-decoration:underline;\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading {\n" +
-  "  %markup.heading%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_1 {\n" +
-  "  %markup.heading.1%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_2 {\n" +
-  "  %markup.heading.2%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_3 {\n" +
-  "  %markup.heading.3%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_4 {\n" +
-  "  %markup.heading.4%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_5 {\n" +
-  "  %markup.heading.5%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_heading.ace_6 {\n" +
-  "  %markup.heading.6%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_markup.ace_list {\n" +
-  "  %markup.list%\n" +
-  "}\n" +
-  "\n" +
-  ".%cssClass% .ace_collab.ace_user1 {\n" +
-  "  %collab.user1%   \n" +
-  "}");
-
-define("text!docs/css.css", [], ".text-layer {\n" +
-  "    font-family: Monaco, \"Courier New\", monospace;\n" +
-  "    font-size: 12px;\n" +
-  "    cursor: text;\n" +
-  "}");
-
-define("text!styles.css", [], "html {\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    overflow: hidden;\n" +
-  "}\n" +
-  "\n" +
-  "body {\n" +
-  "    overflow: hidden;\n" +
-  "    margin: 0;\n" +
-  "    padding: 0;\n" +
-  "    height: 100%;\n" +
-  "    width: 100%;\n" +
-  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;\n" +
-  "    font-size: 12px;\n" +
-  "    background: rgb(14, 98, 165);\n" +
-  "    color: white;\n" +
-  "}\n" +
-  "\n" +
-  "#logo {\n" +
-  "    padding: 15px;\n" +
-  "    margin-left: 70px;\n" +
-  "}\n" +
-  "\n" +
-  "#editor {\n" +
-  "    position: absolute;\n" +
-  "    top:  0px;\n" +
-  "    left: 300px;\n" +
-  "    bottom: 0px;\n" +
-  "    right: 0px;\n" +
-  "    background: white;\n" +
-  "}\n" +
-  "\n" +
-  "#controls {\n" +
-  "    padding: 5px;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td {\n" +
-  "    text-align: right;\n" +
-  "}\n" +
-  "\n" +
-  "#controls td + td {\n" +
-  "    text-align: left;\n" +
+define("text/styles.css", [], "html {" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    overflow: hidden;" +
+  "}" +
+  "" +
+  "body {" +
+  "    overflow: hidden;" +
+  "    margin: 0;" +
+  "    padding: 0;" +
+  "    height: 100%;" +
+  "    width: 100%;" +
+  "    font-family: Arial, Helvetica, sans-serif, Tahoma, Verdana, sans-serif;" +
+  "    font-size: 12px;" +
+  "    background: rgb(14, 98, 165);" +
+  "    color: white;" +
+  "}" +
+  "" +
+  "#logo {" +
+  "    padding: 15px;" +
+  "    margin-left: 65px;" +
+  "}" +
+  "" +
+  "#editor {" +
+  "    position: absolute;" +
+  "    top:  0px;" +
+  "    left: 280px;" +
+  "    bottom: 0px;" +
+  "    right: 0px;" +
+  "    background: white;" +
+  "}" +
+  "" +
+  "#controls {" +
+  "    padding: 5px;" +
+  "}" +
+  "" +
+  "#controls td {" +
+  "    text-align: right;" +
+  "}" +
+  "" +
+  "#controls td + td {" +
+  "    text-align: left;" +
+  "}" +
+  "" +
+  "#cockpitInput {" +
+  "    position: absolute;" +
+  "    left: 280px;" +
+  "    right: 0px;" +
+  "    bottom: 0;" +
+  "" +
+  "    border: none; outline: none;" +
+  "    font-family: consolas, courier, monospace;" +
+  "    font-size: 120%;" +
+  "}" +
+  "" +
+  "#cockpitOutput {" +
+  "    padding: 10px;" +
+  "    margin: 0 15px;" +
+  "    border: 1px solid #AAA;" +
+  "    -moz-border-radius-topleft: 10px;" +
+  "    -moz-border-radius-topright: 10px;" +
+  "    border-top-left-radius: 4px; border-top-right-radius: 4px;" +
+  "    background: #DDD; color: #000;" +
   "}");
 
 /* ***** BEGIN LICENSE BLOCK *****

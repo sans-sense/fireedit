@@ -1,3 +1,8 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: Apache License 2.0 http://opensource.org/licenses/apache2.0.php
+ *
+ * Command manager manages all commands, it takes care of keybindinds and relevant actions
+ */   
 define("fireedit/core/command_manager", 
        ["require", "exports", "module", "pilot/canon"],
        function(require, exports, module) {

@@ -191,7 +191,7 @@ body{
 }
 
 .icon-adjust.icon-fx{
-    background-image: url('img/fx_white.png');
+    background-image: url('../img/fx_white.png');
     background-position: 0 0;
 }
 

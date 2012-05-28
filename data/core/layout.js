@@ -109,15 +109,15 @@ $(function () {
     $('#settings').click(function(event) {
         var UIManager = require('fireedit/ui/ui_manager').UIManager;
         var elementSelector = '#dynamic-display';
-        UIManager.openModalDialog('settings.html', elementSelector, "Settings", function(){
-            UIManager.evalNewScript('settings.js');
+        UIManager.openModalDialog('./components/settings.html', elementSelector, "Settings", function(){
+            UIManager.evalNewScript('./components/settings.js');
         });
     });
 
     $('#aboutFireEdit').click(function(event) {
         var UIManager = require('fireedit/ui/ui_manager').UIManager;
         var elementSelector = '#dynamic-display';
-        UIManager.openModalDialog('about.html', elementSelector, "About FireEdit");
+        UIManager.openModalDialog('./components/about.html', elementSelector, "About FireEdit");
     });
 
     $("#reportProblem").click(function(event) {
