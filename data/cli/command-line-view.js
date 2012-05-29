@@ -53,5 +53,12 @@ define("fireedit/command-line-view",
                    }
                };
            };
+
+           // key-listener to get focus to command line
+           $(document).keypress(function(event){
+               if (event.which === 32 && event.ctrlKey) {
+                   $("#command-line").focus();
+               }
+           })
            
        });

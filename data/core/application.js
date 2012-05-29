@@ -1,5 +1,5 @@
 define("fireedit/core/application", 
-       ["require", "exports", "module", "fireedit/core/localResourceManager"],
+       ["require", "exports", "module", "fireedit/core/localResourceManager", "fireedit/history/file_open_history"],
        function(require, exports, module) {
 
            var getResourceManager = function() {
@@ -24,6 +24,14 @@ define("fireedit/core/application",
                var currentEditor;
                var registeredViews = {};
                var self = this;
+               var history = require('fireedit/history/file_open_history');
+
+               var loadURL = function(urlVal){
+                   require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
+                       self.setCurrentEditorUrl(urlVal);
+                       self.setCurrentEditorContent(responseText);
+                   });
+               }
 
                this.localModeRun = function() {
                    return document.location.toString().match(/^file:/);
@@ -95,10 +103,28 @@ define("fireedit/core/application",
                this.getView = function(name) {
                    return registeredViews[name];
                };
+               this.init = function() {
+                   if (this.localModeRun()) {
+                       history.bind(function(path){
+                           if(!path.length){
+                               document.defaultView.location.reload()
+                           }else{
+                               loadURL(path);
+                           }
+                       });
+                   }
+               };
+               this.openUrlInEditor = function(urlVal) {
+                   history.pushFileToHistory(urlVal)
+                   loadURL(urlVal);
+               };
            }).call(Application.prototype);
 
            var currentApplication = new Application();
+           currentApplication.init();
            exports.application = currentApplication;
            
        });
 
+
+// $("#edit-area ul.nav-tabs").append('<li><a href="#editor-file001" data-toggle="tab">Scratch Pad</a>')

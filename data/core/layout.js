@@ -2,50 +2,10 @@ $(function () {
 
     var application = require('fireedit/core/application').application;
 
-    var history = null;
-    var initHistory = function(){
-        if(application.localModeRun()){
-            history = require('fireedit/history/file_open_history');
-            history.bind(function(path){
-                if(!path.length){
-                    document.defaultView.location.reload()
-                }else{
-                    loadURL(path);
-                }
-            });
-        }
-    };
-
     var layout = function () {
         setupEditorHeight();
-        //$('.main-area').css(hei)
-
-        $('#nav-collapser').click(function () {
-            $('#nav-collapser > i').toggleClass("icon-eye-close icon-eye-open");
-            if ($('#main-nav').hasClass("fullwide")) {
-                $('.nav-collapse').hide('slide', 500);
-                $('#main-nav .navbar-inner').animate({
-                    width:'20%'
-                }, 500, function () {
-                    $('#main-nav').toggleClass('fullwide');
-                    $('#edit-area').toggleClass('edit-area-top');
-                    //TODO: Resize the Editor
-                });
-            } else {
-                $('#edit-area').toggleClass('edit-area-top');
-                $('.nav-collapse').show('slide', 500);
-                $('#main-nav .navbar-inner').animate({
-                    width:'100%'
-                }, 500, function () {
-                    $('#main-nav').toggleClass('fullwide');
-                    //TODO: Resize the Editor
-                });
-            }
-            return false;
-        });
-
+        require('fireedit/ui/menu_manager').menuManager.addClickBehavior();
         setupEditor();
-        initHistory();
     }
 
     var setupEditor = function () {
@@ -92,18 +52,11 @@ $(function () {
         $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
             if (urlVal && urlVal.length > 0) {
-                history.pushFileToHistory(urlVal)
-                loadURL(urlVal);
+                application.openUrlInEditor(urlVal);
             }
         });
     }
 
-    var loadURL = function(urlVal){
-        require('fireedit/ui/ui_manager').UIManager.openUrl(urlVal,  function(responseText) {
-            application.setCurrentEditorUrl(urlVal);
-            application.setCurrentEditorContent(responseText);
-        });
-    }
     // AN: end of hack
 
     $('#settings').click(function(event) {
