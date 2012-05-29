@@ -4,7 +4,8 @@ $(function () {
 
     var layout = function () {
         setupEditorHeight();
-        require('fireedit/ui/menu_manager').menuManager.addClickBehavior();
+        // TODO we should not need to call this
+        require('fireedit/ui/menu_manager').menuManager.addDynamicBehavior();
         setupEditor();
     }
 
@@ -44,10 +45,6 @@ $(function () {
     }
 
     // AN : Hack to make local mode a bit more functional
-    var localModeRun = function() {
-        return document.location.toString().match(/^file:/);
-    }
-
     if (application.localModeRun()) {
         $('#openFile').click(function(event) {
             var urlVal = prompt("Enter File Name", document.location.toString());
@@ -59,23 +56,6 @@ $(function () {
 
     // AN: end of hack
 
-    $('#settings').click(function(event) {
-        var UIManager = require('fireedit/ui/ui_manager').UIManager;
-        var elementSelector = '#dynamic-display';
-        UIManager.openModalDialog('./components/settings.html', elementSelector, "Settings", function(){
-            UIManager.evalNewScript('./components/settings.js');
-        });
-    });
-
-    $('#aboutFireEdit').click(function(event) {
-        var UIManager = require('fireedit/ui/ui_manager').UIManager;
-        var elementSelector = '#dynamic-display';
-        UIManager.openModalDialog('./components/about.html', elementSelector, "About FireEdit");
-    });
-
-    $("#reportProblem").click(function(event) {
-        window.open("https://github.com/sans-sense/fireedit/issues");
-    });
 
     window.addEventListener("message", function (event) {
         try {
