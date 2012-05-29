@@ -31,7 +31,7 @@ define("fireedit/core/application",
                        self.setCurrentEditorUrl(urlVal);
                        self.setCurrentEditorContent(responseText);
                    });
-               }
+               };
 
                this.localModeRun = function() {
                    return document.location.toString().match(/^file:/);
@@ -107,7 +107,7 @@ define("fireedit/core/application",
                    if (this.localModeRun()) {
                        history.bind(function(path){
                            if(!path.length){
-                               document.defaultView.location.reload()
+                               document.defaultView.location.reload();
                            }else{
                                loadURL(path);
                            }
@@ -115,8 +115,31 @@ define("fireedit/core/application",
                    }
                };
                this.openUrlInEditor = function(urlVal) {
-                   history.pushFileToHistory(urlVal)
+                   history.pushFileToHistory(urlVal);
                    loadURL(urlVal);
+               };
+               this.uiInitialized = function() {
+                   var editor = ace.edit("editor-file001");
+                   editor.setTheme("ace/theme/twilight");
+                   self.setCurrentEditor(editor);
+
+                   var JavaScriptMode = require("fireedit/mode/enh_javascript").Mode;
+                   var jsMode = new JavaScriptMode();
+                   editor.getSession().setMode(jsMode);
+                   // TODO we need a way to listen on change and rebuild my AST
+                   jsMode.enhanceWorker(editor.getSession());
+
+                   var OutlineView = require("fireedit/view/outline_view").View;
+                   new OutlineView(jsMode, document.getElementById("sidebar-outline"));
+
+                   jsMode.emitAST(editor.getSession().getDocument().getValue());
+                   editor.focus();
+
+                   require("fireedit/shell-commands").commands.register();
+                   var commandLineView = require("fireedit/command-line-view").view;
+                   var commandLineController = require("fireedit/command-line-controller").controller;
+                   commandLineView.bindTo($('#command-line'));
+                   commandLineController.bindTo(commandLineView);
                };
            }).call(Application.prototype);
 

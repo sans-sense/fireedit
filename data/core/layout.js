@@ -10,28 +10,7 @@ $(function () {
     }
 
     var setupEditor = function () {
-        var editor = ace.edit("editor-file001");
-        editor.setTheme("ace/theme/twilight");
-        application.setCurrentEditor(editor);
-
-        var JavaScriptMode = require("fireedit/mode/enh_javascript").Mode;
-        var jsMode = new JavaScriptMode();
-        editor.getSession().setMode(jsMode);
-
-        // TODO we need a way to listen on change and rebuild my AST
-        jsMode.enhanceWorker(editor.getSession());
-
-        var OutlineView = require("fireedit/view/outline_view").View;
-        var outlineView = new OutlineView(jsMode, document.getElementById("sidebar-outline"));
-
-        jsMode.emitAST(editor.getSession().getDocument().getValue());
-        editor.focus();
-
-        require("fireedit/shell-commands").commands.register();
-        var commandLineView = require("fireedit/command-line-view").view;
-        var commandLineController = require("fireedit/command-line-controller").controller;
-        commandLineView.bindTo($('#command-line'));
-        commandLineController.bindTo(commandLineView);
+        application.uiInitialized();
     }
 
     var setupEditorHeight = function(){
