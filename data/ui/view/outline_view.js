@@ -155,8 +155,8 @@ define("fireedit/view/outline_view",
                 }
             };
             this.find = function(functionPattern) {
-                var query = 'li:actuallyContains("'+functionPattern+'")';
-                $('#outline-tree').citrus('highlightNode', query);
+                var query = 'span.nodeText:actuallyContains("'+functionPattern+'")';
+                $("#function_tree").citrus('highlightNode', query);
             };
         }).call(OutlineView.prototype);
         exports.View = OutlineView;

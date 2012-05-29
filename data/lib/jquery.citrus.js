@@ -79,15 +79,16 @@
         },
         highlightNode:function (query) {
             $('.highlight').removeClass("highlight");
-            var nodeToHighlight = this.find(query);
-            var collapsed = nodeToHighlight.parentsUntil(this, 'li.collapsed');
+            var element = this.element;
+            var nodeToHighlight = element.find(query);
+            var collapsed = nodeToHighlight.parentsUntil(element, 'li.collapsed');
             collapsed.each(function () {
                 var node = $(this);
                 node.children('ul').show();
                 node.removeClass('collapsed');
                 node.addClass('expanded');
             });
-            nodeToHighlight.addClass("  highlight");
+            nodeToHighlight.closest("li").addClass("  highlight");
             return this;
         },
         refresh: function(data){
@@ -162,4 +163,13 @@
         }
     });
 
+    // AN : used by outline view and other guys for actuallyContains
+    $.extend($.expr[':'], {
+        actuallyContains:function (elem, i, match, array) {
+            var filtered = $(elem).contents().filter(function(i){
+                return (this.textContent.indexOf(match[3]) >= 0)
+            });
+            return filtered.length > 0;
+        }
+    });
 })(jQuery);

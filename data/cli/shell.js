@@ -32,11 +32,11 @@ define("fireedit/shell",
                    if(name === commands[i].name) {
                        return commands[i];
                    }
-                   throw { 
-                       name: "CommandNotFoundError",
-                       message: "Unknown command: " + name
-                   };
                }
+               throw { 
+                   name: "CommandNotFoundError",
+                   message: "Unknown command: " + name
+               };
            };
 
            var execute = function(commandName, args) {
